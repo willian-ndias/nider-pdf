@@ -31,10 +31,33 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: nider-pdf-windows-x64
+      # O PdfCraft fixa a versão (0.9.0) nas dependências internas e o `xtask version set`
+      # não aceita voltar para 0.1.x: troca direto no Cargo.toml e no Cargo.lock.
       - name: Aplicar a versão da etiqueta
         if: startsWith(github.ref, 'refs/tags/v')
-        shell: bash
-        run: cargo xtask version set "${GITHUB_REF_NAME#v}"
+        shell: python
+        run: |
+          import os, re
+          v = os.environ["GITHUB_REF_NAME"].lstrip("vV")
+          t = open("Cargo.toml", encoding="utf-8").read()
+          n = t.count('"0.9.0"')
+          t = t.replace('"0.9.0"', '"%s"' % v)
+          open("Cargo.toml", "w", encoding="utf-8").write(t)
+          l = open("Cargo.lock", encoding="utf-8").read()
+          cont = 0
+          def troca(m):
+              global cont
+              b = m.group(0)
+              nome = re.search(r'name = "([^"]+)"', b).group(1)
+              if (nome.startswith("pdfcraft") or nome == "xtask") and 'version = "0.9.0"' in b:
+                  cont += 1
+                  return b.replace('version = "0.9.0"', 'version = "%s"' % v, 1)
+              return b
+          l = re.sub(r"\[\[package\]\]\n(?:(?!\[\[package\]\]).)*?(?=\n\n|\Z)", troca, l, flags=re.S)
+          open("Cargo.lock", "w", encoding="utf-8").write(l)
+          print("versao", v, "| Cargo.toml:", n, "| Cargo.lock:", cont)
+          if n == 0 or cont == 0:
+              raise SystemExit("nada foi trocado")
       - name: Instalar WiX
         shell: pwsh
         run: |
