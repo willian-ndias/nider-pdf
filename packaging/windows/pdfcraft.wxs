@@ -13,31 +13,31 @@
 -->
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package
-      Name="PdfCraft"
-      Manufacturer="Learning Machines LLC"
+      Name="Nider PDF"
+      Manufacturer="Nider"
       Version="$(var.Version)"
-      UpgradeCode="EA00C367-7270-4C50-9D8B-A7A5C88AD27F"
+      UpgradeCode="2F068B1D-C5E4-471A-8610-3EFDF4576B35"
       Scope="perMachine"
       Compressed="yes"
       Language="1033">
-    <SummaryInformation Description="PdfCraft PDF workbench" Manufacturer="Learning Machines LLC" />
+    <SummaryInformation Description="Nider PDF, leitor e editor de PDF" Manufacturer="Nider" />
     <!-- HKLM registrations must never point into a per-user installation (#305). Allow removal
          of an existing installation even if an older MSI let it install per-user. -->
     <Launch Condition="ALLUSERS = 1 OR (Installed AND REMOVE = &quot;ALL&quot;)"
-        Message="PdfCraft must be installed for all users. Run setup with administrator privileges and ALLUSERS=1; per-user installation is not supported." />
+        Message="Nider PDF must be installed for all users. Run setup with administrator privileges and ALLUSERS=1; per-user installation is not supported." />
     <!-- Same-version upgrades let successive pre-releases of one X.Y.Z replace each other
          (MSI versions are numeric, so 1.2.3-rc.1 and 1.2.3-rc.2 are both 1.2.3). -->
     <MajorUpgrade AllowSameVersionUpgrades="yes"
-        DowngradeErrorMessage="A newer version of PdfCraft is already installed." />
+        DowngradeErrorMessage="A newer version of Nider PDF is already installed." />
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
 
     <!-- Windows Installer requires an Icon id ending in .ico or .exe, or advertised shortcuts and
          Add/Remove Programs show a blank icon (#57). -->
     <Icon Id="PdfcraftIcon.ico" SourceFile="$(var.IconPath)" />
     <Property Id="ARPPRODUCTICON" Value="PdfcraftIcon.ico" />
-    <Property Id="ARPURLINFOABOUT" Value="https://getartcraft.com/apps/pdfcraft" />
-    <Property Id="ARPURLUPDATEINFO" Value="https://getartcraft.com/apps/pdfcraft" />
-    <Property Id="ARPHELPLINK" Value="https://discord.gg/artcraft" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/willian-ndias/nider-pdf" />
+    <Property Id="ARPURLUPDATEINFO" Value="https://github.com/willian-ndias/nider-pdf" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/willian-ndias/nider-pdf" />
     <!-- Desktop shortcut (#143): on by default for a first install, a checkbox in the full-UI
          welcome dialog, and INSTALLDESKTOPSHORTCUT=0 on the msiexec command line for unattended
          installs. Secure, so the choice made in the (unelevated) UI reaches the elevated install.
@@ -47,7 +47,7 @@
     <Property Id="INSTALLDESKTOPSHORTCUT" Secure="yes" />
     <Property Id="EXISTINGDESKTOPSHORTCUT">
       <DirectorySearch Id="DesktopSearch" Path="[DesktopFolder]" Depth="0">
-        <FileSearch Name="PdfCraft.lnk" />
+        <FileSearch Name="Nider PDF.lnk" />
       </DirectorySearch>
     </Property>
     <SetProperty Id="INSTALLDESKTOPSHORTCUT" Value="1" After="AppSearch" Sequence="first"
@@ -80,14 +80,14 @@
     <UIRef Id="PdfcraftInstallerUI" />
 
     <StandardDirectory Id="ProgramFiles6432Folder">
-      <Directory Id="INSTALLFOLDER" Name="PdfCraft">
+      <Directory Id="INSTALLFOLDER" Name="Nider PDF">
         <Directory Id="ModelsFolder" Name="models" />
       </Directory>
     </StandardDirectory>
     <StandardDirectory Id="ProgramMenuFolder" />
     <StandardDirectory Id="DesktopFolder" />
 
-    <Feature Id="Main" Title="PdfCraft" Level="1">
+    <Feature Id="Main" Title="Nider PDF" Level="1">
       <ComponentGroupRef Id="PdfcraftFiles" />
       <ComponentGroupRef Id="PdfcraftModels" />
     </Feature>
@@ -95,7 +95,7 @@
 
   <Fragment>
     <ComponentGroup Id="PdfcraftFiles" Directory="INSTALLFOLDER">
-      <Component Id="PdfcraftApp" Guid="E724C1C6-091F-4E21-A685-80D089FDBE21">
+      <Component Id="PdfcraftApp" Guid="06F66233-DB74-4D9B-9FC0-D48732F060BE">
         <File Id="PdfcraftExe" Source="$(var.BinDir)\pdfcraft.exe" KeyPath="yes" />
 
         <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\App Paths\pdfcraft.exe" Value="[#PdfcraftExe]" Type="string" />
@@ -117,11 +117,11 @@
              Handlers", Microsoft Learn). -->
         <RegistryValue Root="HKLM" Key="Software\Classes\PdfCraft.Document" Name="TypeOverlay" Value="" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\.pdf\OpenWithProgids" Name="PdfCraft.Document" Value="" Type="string" />
-        <RegistryValue Root="HKLM" Key="Software\Classes\Applications\pdfcraft.exe" Name="FriendlyAppName" Value="PdfCraft" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\Applications\pdfcraft.exe" Name="FriendlyAppName" Value="Nider PDF" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\Applications\pdfcraft.exe\DefaultIcon" Value="&quot;[#PdfcraftExe]&quot;,-2" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\Applications\pdfcraft.exe\SupportedTypes" Name=".pdf" Value="" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\Applications\pdfcraft.exe\shell\open\command" Value="&quot;[#PdfcraftExe]&quot; &quot;%1&quot;" Type="string" />
-        <RegistryValue Root="HKLM" Key="Software\PdfCraft\Capabilities" Name="ApplicationName" Value="PdfCraft" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\PdfCraft\Capabilities" Name="ApplicationName" Value="Nider PDF" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\PdfCraft\Capabilities" Name="ApplicationDescription" Value="Open-source PDF workbench" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\PdfCraft\Capabilities" Name="ApplicationIcon" Value="[#PdfcraftExe],0" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\PdfCraft\Capabilities\FileAssociations" Name=".pdf" Value="PdfCraft.Document" Type="string" />
@@ -133,15 +133,15 @@
            use as a file handler (#107), and 0.2.1's advertised one went missing from the Start menu
            (#143). Each has its own component with an HKLM key path, so Windows Installer removes it
            on uninstall; in this per-machine package both folders are the all-users ones. -->
-      <Component Id="PdfcraftStartMenuShortcut" Directory="ProgramMenuFolder" Guid="DC028192-C233-4F99-9A77-ED458C60DF26">
-        <Shortcut Id="StartMenuShortcut" Name="PdfCraft" Description="PdfCraft PDF workbench"
+      <Component Id="PdfcraftStartMenuShortcut" Directory="ProgramMenuFolder" Guid="4E79A088-2E85-4FDB-93A1-0A9D49EDE9C4">
+        <Shortcut Id="StartMenuShortcut" Name="Nider PDF" Description="Nider PDF, leitor e editor de PDF"
             Target="[#PdfcraftExe]" WorkingDirectory="INSTALLFOLDER" Icon="PdfcraftIcon.ico" IconIndex="0" />
         <RegistryValue Root="HKLM" Key="Software\PdfCraft\Shortcuts" Name="StartMenu" Type="integer" Value="1" KeyPath="yes" />
       </Component>
 
-      <Component Id="PdfcraftDesktopShortcut" Directory="DesktopFolder" Guid="F6948627-32AB-4D78-8865-0FDF417CE442"
+      <Component Id="PdfcraftDesktopShortcut" Directory="DesktopFolder" Guid="B17E69EF-0A0C-446E-ADBD-5E9F40FA01CE"
           Condition="INSTALLDESKTOPSHORTCUT = 1">
-        <Shortcut Id="DesktopShortcut" Name="PdfCraft" Description="PdfCraft PDF workbench"
+        <Shortcut Id="DesktopShortcut" Name="Nider PDF" Description="Nider PDF, leitor e editor de PDF"
             Target="[#PdfcraftExe]" WorkingDirectory="INSTALLFOLDER" Icon="PdfcraftIcon.ico" IconIndex="0" />
         <RegistryValue Root="HKLM" Key="Software\PdfCraft\Shortcuts" Name="Desktop" Type="integer" Value="1" KeyPath="yes" />
       </Component>
@@ -153,9 +153,9 @@
            Windows 11 the entry is under "Show more options": the first-level menu only takes
            packaged apps' (IExplorerCommand) entries. Its own component with an HKLM key path, so
            INSTALLPDFCONTEXTMENU=0 leaves it out and uninstall removes it. -->
-      <Component Id="PdfcraftPdfContextMenu" Guid="439F084F-657D-4AC2-A4CC-F099C518D71F"
+      <Component Id="PdfcraftPdfContextMenu" Guid="FC1B2993-6775-42EF-BC30-06B881DFE95E"
           Condition="INSTALLPDFCONTEXTMENU = 1">
-        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.pdf\shell\PdfCraft.Edit" Value="Edit with PdfCraft" Type="string" KeyPath="yes" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.pdf\shell\PdfCraft.Edit" Value="Editar com o Nider PDF" Type="string" KeyPath="yes" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.pdf\shell\PdfCraft.Edit" Name="Icon" Value="&quot;[#PdfcraftExe]&quot;,0" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.pdf\shell\PdfCraft.Edit" Name="MultiSelectModel" Value="Document" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.pdf\shell\PdfCraft.Edit\command" Value="&quot;[#PdfcraftExe]&quot; &quot;%1&quot;" Type="string" />
@@ -166,36 +166,36 @@
            INSTALLIMAGECONTEXTMENU=0 leaves it out and uninstall removes it. These rows were in
            PdfcraftApp up to 0.7.1; moving them is safe because MajorUpgrade removes the old version
            before installing (afterInstallValidate), so no old row is left behind. -->
-      <Component Id="PdfcraftImageContextMenu" Guid="1B783BF3-12DF-4588-AF80-E2CEA8BC1E5A"
+      <Component Id="PdfcraftImageContextMenu" Guid="5DB9633E-4486-4A69-B498-29F7A517D29A"
           Condition="INSTALLIMAGECONTEXTMENU = 1">
-        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.png\shell\PdfCraft.CreatePdf" Value="Create PDF with PdfCraft…" Type="string" KeyPath="yes" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.png\shell\PdfCraft.CreatePdf" Value="Criar PDF com o Nider PDF…" Type="string" KeyPath="yes" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.png\shell\PdfCraft.CreatePdf" Name="MultiSelectModel" Value="Single" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.png\shell\PdfCraft.CreatePdf\command" Value="&quot;[#PdfcraftExe]&quot; --create-images &quot;%1&quot;" Type="string" />
-        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.jpg\shell\PdfCraft.CreatePdf" Value="Create PDF with PdfCraft…" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.jpg\shell\PdfCraft.CreatePdf" Value="Criar PDF com o Nider PDF…" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.jpg\shell\PdfCraft.CreatePdf" Name="MultiSelectModel" Value="Single" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.jpg\shell\PdfCraft.CreatePdf\command" Value="&quot;[#PdfcraftExe]&quot; --create-images &quot;%1&quot;" Type="string" />
-        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.jpeg\shell\PdfCraft.CreatePdf" Value="Create PDF with PdfCraft…" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.jpeg\shell\PdfCraft.CreatePdf" Value="Criar PDF com o Nider PDF…" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.jpeg\shell\PdfCraft.CreatePdf" Name="MultiSelectModel" Value="Single" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.jpeg\shell\PdfCraft.CreatePdf\command" Value="&quot;[#PdfcraftExe]&quot; --create-images &quot;%1&quot;" Type="string" />
-        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.tif\shell\PdfCraft.CreatePdf" Value="Create PDF with PdfCraft…" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.tif\shell\PdfCraft.CreatePdf" Value="Criar PDF com o Nider PDF…" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.tif\shell\PdfCraft.CreatePdf" Name="MultiSelectModel" Value="Single" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.tif\shell\PdfCraft.CreatePdf\command" Value="&quot;[#PdfcraftExe]&quot; --create-images &quot;%1&quot;" Type="string" />
-        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.tiff\shell\PdfCraft.CreatePdf" Value="Create PDF with PdfCraft…" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.tiff\shell\PdfCraft.CreatePdf" Value="Criar PDF com o Nider PDF…" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.tiff\shell\PdfCraft.CreatePdf" Name="MultiSelectModel" Value="Single" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.tiff\shell\PdfCraft.CreatePdf\command" Value="&quot;[#PdfcraftExe]&quot; --create-images &quot;%1&quot;" Type="string" />
-        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.gif\shell\PdfCraft.CreatePdf" Value="Create PDF with PdfCraft…" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.gif\shell\PdfCraft.CreatePdf" Value="Criar PDF com o Nider PDF…" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.gif\shell\PdfCraft.CreatePdf" Name="MultiSelectModel" Value="Single" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.gif\shell\PdfCraft.CreatePdf\command" Value="&quot;[#PdfcraftExe]&quot; --create-images &quot;%1&quot;" Type="string" />
-        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.bmp\shell\PdfCraft.CreatePdf" Value="Create PDF with PdfCraft…" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.bmp\shell\PdfCraft.CreatePdf" Value="Criar PDF com o Nider PDF…" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.bmp\shell\PdfCraft.CreatePdf" Name="MultiSelectModel" Value="Single" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.bmp\shell\PdfCraft.CreatePdf\command" Value="&quot;[#PdfcraftExe]&quot; --create-images &quot;%1&quot;" Type="string" />
-        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.jp2\shell\PdfCraft.CreatePdf" Value="Create PDF with PdfCraft…" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.jp2\shell\PdfCraft.CreatePdf" Value="Criar PDF com o Nider PDF…" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.jp2\shell\PdfCraft.CreatePdf" Name="MultiSelectModel" Value="Single" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.jp2\shell\PdfCraft.CreatePdf\command" Value="&quot;[#PdfcraftExe]&quot; --create-images &quot;%1&quot;" Type="string" />
-        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.j2k\shell\PdfCraft.CreatePdf" Value="Create PDF with PdfCraft…" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.j2k\shell\PdfCraft.CreatePdf" Value="Criar PDF com o Nider PDF…" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.j2k\shell\PdfCraft.CreatePdf" Name="MultiSelectModel" Value="Single" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.j2k\shell\PdfCraft.CreatePdf\command" Value="&quot;[#PdfcraftExe]&quot; --create-images &quot;%1&quot;" Type="string" />
-        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.jpx\shell\PdfCraft.CreatePdf" Value="Create PDF with PdfCraft…" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.jpx\shell\PdfCraft.CreatePdf" Value="Criar PDF com o Nider PDF…" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.jpx\shell\PdfCraft.CreatePdf" Name="MultiSelectModel" Value="Single" Type="string" />
         <RegistryValue Root="HKLM" Key="Software\Classes\SystemFileAssociations\.jpx\shell\PdfCraft.CreatePdf\command" Value="&quot;[#PdfcraftExe]&quot; --create-images &quot;%1&quot;" Type="string" />
       </Component>

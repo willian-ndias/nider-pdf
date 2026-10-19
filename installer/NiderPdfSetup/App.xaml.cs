@@ -1,0 +1,33 @@
+using System;
+using System.Linq;
+using System.Windows;
+
+namespace NiderPdfSetup;
+
+public partial class App : Application
+{
+    protected override void OnStartup(StartupEventArgs e)
+    {
+        base.OnStartup(e);
+        if (e.Args.Any(a => a.Equals("/uninstall", StringComparison.OrdinalIgnoreCase)))
+        {
+            var ok = MessageBox.Show("Remover o Nider PDF deste computador?\n\nOs seus documentos não são apagados.",
+                "Desinstalar o Nider PDF", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (ok == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    Installer.Uninstall();
+                    MessageBox.Show("O Nider PDF foi removido.", "Nider PDF", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Não foi possível remover tudo: " + ex.Message, "Nider PDF", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+            Shutdown();
+            return;
+        }
+        new MainWindow().Show();
+    }
+}

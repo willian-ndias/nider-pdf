@@ -17,8 +17,8 @@ pub enum ThemeKind {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum ThemePreference {
     System,
-    #[default]
     Light,
+    #[default]
     Dark,
 }
 
@@ -96,25 +96,25 @@ impl Tokens {
             },
             ThemeKind::Dark => Self {
                 kind,
-                titlebar: Color32::from_rgb(0x1B, 0x1B, 0x1E),
-                chrome: Color32::from_rgb(0x26, 0x26, 0x2A),
-                panel: Color32::from_rgb(0x26, 0x26, 0x2A),
-                pasteboard: Color32::from_rgb(0x19, 0x19, 0x1C),
-                card: Color32::from_rgb(0x2E, 0x2E, 0x33),
-                border: Color32::from_rgb(0x3C, 0x3C, 0x43),
-                divider: Color32::from_rgb(0x33, 0x33, 0x39),
-                text: Color32::from_rgb(0xEC, 0xEC, 0xEF),
-                text_muted: Color32::from_rgb(0xAE, 0xAE, 0xB6),
-                text_faint: Color32::from_rgb(0x97, 0x97, 0x9E),
-                icon: Color32::from_rgb(0xD4, 0xD4, 0xDA),
-                hover: Color32::from_rgb(0x34, 0x34, 0x3A),
-                pressed: Color32::from_rgb(0x3E, 0x3E, 0x45),
-                selected: Color32::from_rgb(0x23, 0x3A, 0x63),
-                accent: Color32::from_rgb(0x4B, 0x8B, 0xF5),
-                accent_text: Color32::from_rgb(0x8C, 0xB6, 0xFA),
-                accent_soft: Color32::from_rgb(0x24, 0x36, 0x57),
-                field: Color32::from_rgb(0x1E, 0x1E, 0x22),
-                badge_new: Color32::from_rgb(0x3D, 0x7D, 0xEE),
+                titlebar: Color32::from_rgb(0x0F, 0x12, 0x16),
+                chrome: Color32::from_rgb(0x1D, 0x21, 0x27),
+                panel: Color32::from_rgb(0x18, 0x1C, 0x21),
+                pasteboard: Color32::from_rgb(0x0B, 0x0D, 0x10),
+                card: Color32::from_rgb(0x1D, 0x21, 0x27),
+                border: Color32::from_rgb(0x2C, 0x32, 0x3A),
+                divider: Color32::from_rgb(0x26, 0x2B, 0x32),
+                text: Color32::from_rgb(0xEE, 0xF3, 0xF6),
+                text_muted: Color32::from_rgb(0x9A, 0xA6, 0xAF),
+                text_faint: Color32::from_rgb(0x6B, 0x76, 0x80),
+                icon: Color32::from_rgb(0xD6, 0xDE, 0xE3),
+                hover: Color32::from_rgb(0x2A, 0x30, 0x38),
+                pressed: Color32::from_rgb(0x34, 0x3B, 0x44),
+                selected: Color32::from_rgb(0x34, 0x3C, 0x46),
+                accent: Color32::from_rgb(0x46, 0xC3, 0xFF),
+                accent_text: Color32::from_rgb(0x46, 0xC3, 0xFF),
+                accent_soft: Color32::from_rgb(0x1F, 0x3A, 0x48),
+                field: Color32::from_rgb(0x14, 0x18, 0x20),
+                badge_new: Color32::from_rgb(0x46, 0xC3, 0xFF),
                 page_shadow: Color32::from_black_alpha(120),
                 radius: 6,
             },
@@ -122,7 +122,7 @@ impl Tokens {
     }
 
     pub fn get(ctx: &egui::Context) -> Self {
-        ctx.data(|d| d.get_temp::<Tokens>(egui::Id::new("pdfcraft-theme"))).unwrap_or_else(|| Self::for_kind(ThemeKind::Light))
+        ctx.data(|d| d.get_temp::<Tokens>(egui::Id::new("pdfcraft-theme"))).unwrap_or_else(|| Self::for_kind(ThemeKind::Dark))
     }
 
     pub fn dark(&self) -> bool {

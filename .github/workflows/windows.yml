@@ -1,0 +1,79 @@
+name: Nider PDF para Windows
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Windows x64
+    runs-on: windows-latest
+    timeout-minutes: 90
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: 0
+      PDFCRAFT_BUILD_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fontes do WordCraft (craft-fonts)
+        uses: actions/checkout@v4
+        with:
+          repository: storytold/craft-fonts
+          ref: 3d9ab3a132ed0eff457e424226a435a901da30d3
+          path: craft-fonts
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: nider-pdf-windows-x64
+      - name: Instalar WiX
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 5.0.2
+          wix extension add -g "WixToolset.UI.wixext/5.0.2" "WixToolset.Util.wixext/5.0.2"
+      - name: Compilar e empacotar
+        shell: pwsh
+        env:
+          CRAFT_FONTS_DIR: ${{ github.workspace }}/craft-fonts
+          CRAFT_FONTS_REQUIRED: "1"
+        run: ./packaging/windows/package.ps1 -Arch x64
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Instalador personalizado (NiderPdfSetup.exe)
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem dist/release -Filter "pdfcraft-*-portable.zip" | Select-Object -First 1
+          if (-not $zip) { throw "zip portátil não encontrado" }
+          Copy-Item $zip.FullName installer/NiderPdfSetup/payload.zip
+          $v = ($zip.Name -replace '^pdfcraft-', '' -replace '-windows-x64-portable\.zip$', '')
+          $v3 = ($v -split '-')[0]
+          dotnet publish installer/NiderPdfSetup -c Release -p:Version=$v3 -o dist/setup
+          if ($LASTEXITCODE -ne 0) { throw "falha ao compilar o instalador" }
+          Copy-Item dist/setup/NiderPdfSetup.exe "dist/release/nider-pdf-setup-$v-windows-x64.exe"
+      - name: Renomear arquivos
+        shell: pwsh
+        run: |
+          Get-ChildItem dist/release -File | Where-Object { $_.Name -like 'pdfcraft-*' } | ForEach-Object {
+            Rename-Item $_.FullName ($_.Name -replace '^pdfcraft-', 'nider-pdf-')
+          }
+          Get-ChildItem dist/release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nider-pdf-windows-x64
+          path: dist/release/*
+          if-no-files-found: error
+      - name: Publicar versão no GitHub
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          gh release create "$tag" dist/release/nider-pdf-* --title "Nider PDF $tag" --prerelease \
+            --notes "Instalador do Nider PDF para Windows (x64). Versão em teste. Se o Windows avisar que o aplicativo não é reconhecido, clique em Mais informações e depois em Executar assim mesmo."
