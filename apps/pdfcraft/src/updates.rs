@@ -73,10 +73,12 @@ fn rate_limited(reset: Option<&str>, now: u64) -> String {
 fn parse(body: &str) -> Result<Release, String> {
     let v: serde_json::Value = serde_json::from_str(body).map_err(|e| format!("unreadable answer ({e})"))?;
     let version = v["versao"].as_str().or_else(|| v["tag_name"].as_str()).filter(|t| !t.is_empty() && t.len() <= 64).ok_or("no release found")?.to_string();
-    let url = v["pagina"]
+    // Nider: o link direto do instalador (quando o site manda) vem antes da página de downloads.
+    let url = v["download"]
         .as_str()
+        .or_else(|| v["pagina"].as_str())
         .or_else(|| v["html_url"].as_str())
-        .filter(|u| u.strip_prefix(RELEASES_PAGE).is_some_and(|rest| rest.starts_with('/') && !rest.contains(['?', '#', '\\'])))
+        .filter(|u| u.starts_with("https://nider.com.br/") && !u.contains(['?', '#', '\\', '"', ' ']))
         .unwrap_or(RELEASES_PAGE)
         .to_string();
     Ok(Release { version, url })
