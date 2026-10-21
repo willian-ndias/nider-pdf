@@ -51,7 +51,8 @@ pub fn show(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                             let fill = press.fill(t.card, t.hover, t.pressed);
                             ui.painter().rect(rect, CornerRadius::same(10), fill, Stroke::new(1.0, t.divider), egui::StrokeKind::Inside);
                             let body = rect.translate(press.offset());
-                            let color = egui::Color32::from_rgb(g.hue[0], g.hue[1], g.hue[2]);
+                            // Nider: ícones prata, como no Etapas (sem uma cor diferente por ferramenta).
+                            let color = if t.dark() { t.icon } else { egui::Color32::from_rgb(g.hue[0], g.hue[1], g.hue[2]) };
                             icons::paint(ui, Rect::from_min_size(body.min + vec2(14.0, 14.0), vec2(22.0, 22.0)), g.icon, 21.0, color);
                             let mut title_job = egui::text::LayoutJob::simple_singleline(tl!(g.label).to_owned(), theme::semibold(13.5), t.text);
                             title_job.wrap =
