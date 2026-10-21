@@ -211,8 +211,16 @@ fn main() -> eframe::Result {
     }
     let files = rejoin_split_paths(files, |p| std::path::Path::new(p).is_file());
     let integrated = cfg!(target_os = "macos");
-    // GNOME on Wayland leaves the window frame to the app (src/decorations.rs).
-    let window_controls = if cfg!(any(target_os = "macos", target_os = "windows")) { None } else { decorations::app_drawn() };
+    // GNOME on Wayland leaves the window frame to the app (src/decorations.rs). Windows (Nider):
+    // the app draws its title bar too, so the brand and the file name read clearly
+    // (PDFCRAFT_TITLEBAR=system, or the Use system title bar option, gives the system's back).
+    let window_controls = if cfg!(target_os = "macos") {
+        None
+    } else if cfg!(target_os = "windows") {
+        decorations::windows_app_drawn()
+    } else {
+        decorations::app_drawn()
+    };
     migrate_legacy_folders();
     // The log file stays in the data folder; opened after the arguments (so `--version` leaves
     // no file behind) and after the PrintCraft migration (which a fresh folder would block).

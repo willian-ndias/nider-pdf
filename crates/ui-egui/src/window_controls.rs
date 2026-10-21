@@ -6,6 +6,10 @@
 //! minimize, maximize and close buttons in the desktop's order (GNOME's `button-layout`), and
 //! thin zones along the window's edges resize it. Desktops with server-side decorations (KDE,
 //! Sway, Hyprland, X11) keep their own frame and never get here.
+//!
+//! Windows (Nider): the app draws its own title bar too, so the brand and the document name are
+//! legible instead of the system's small caption. The buttons there look like Windows' own:
+//! rectangles the strip's height, the close one red under the pointer.
 
 use crate::theme::Tokens;
 use egui::viewport::ResizeDirection;
@@ -65,12 +69,19 @@ impl Layout {
     }
 }
 
-/// The round button's diameter, as in Adwaita.
-pub const BUTTON: f32 = 24.0;
+/// Windows-style caption buttons (rectangles, red close) instead of Adwaita's round ones.
+pub const WINDOWS_STYLE: bool = cfg!(target_os = "windows");
+/// The button's width: Adwaita's round diameter, or a Windows caption button's width.
+pub const BUTTON: f32 = if WINDOWS_STYLE { 46.0 } else { 24.0 };
+/// The button's height: the round diameter, or the whole strip on Windows.
+pub const BUTTON_HEIGHT: f32 = if WINDOWS_STYLE { 38.0 } else { 24.0 };
 /// Between two window buttons.
-pub const GAP: f32 = 6.0;
+pub const GAP: f32 = if WINDOWS_STYLE { 0.0 } else { 6.0 };
 /// Between the window buttons and the rest of the strip.
 pub const SIDE_GAP: f32 = 10.0;
+/// The red of a Windows close button under the pointer, and while pressed.
+const CLOSE_HOVER: Color32 = Color32::from_rgb(0xC4, 0x2B, 0x1C);
+const CLOSE_PRESSED: Color32 = Color32::from_rgb(0xA6, 0x23, 0x16);
 
 /// The width `buttons` take in the strip, including the gap to the rest of it.
 pub fn width(buttons: &[Button]) -> f32 {
@@ -95,7 +106,7 @@ pub fn buttons(ui: &mut egui::Ui, buttons: &[Button]) {
             Button::Maximize => tl!("Maximize"),
             Button::Close => tl!("Close"),
         };
-        let (rect, response) = ui.allocate_exact_size(Vec2::splat(BUTTON), Sense::click());
+        let (rect, response) = ui.allocate_exact_size(Vec2::new(BUTTON, BUTTON_HEIGHT), Sense::click());
         response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, label));
         let response = response.on_hover_text(label);
         if ui.is_rect_visible(rect) {
@@ -114,8 +125,12 @@ pub fn buttons(ui: &mut egui::Ui, buttons: &[Button]) {
 }
 
 /// Adwaita's look: a round wash of the text colour, stronger on hover and press, and a 16-point
-/// symbolic glyph drawn with lines (no icon files).
+/// symbolic glyph drawn with lines (no icon files). On Windows, [`paint_windows`].
 fn paint(painter: &egui::Painter, rect: Rect, button: Button, maximized: bool, t: &Tokens, response: &egui::Response) {
+    if WINDOWS_STYLE {
+        paint_windows(painter, rect, button, maximized, t, response);
+        return;
+    }
     let alpha = if response.is_pointer_button_down_on() {
         0.28
     } else if response.hovered() {
@@ -149,6 +164,48 @@ fn paint(painter: &egui::Painter, rect: Rect, button: Button, maximized: bool, t
         Button::Close => {
             painter.line_segment([at(4.0, 4.0), at(11.0, 11.0)], stroke);
             painter.line_segment([at(11.0, 4.0), at(4.0, 11.0)], stroke);
+        }
+    }
+}
+
+/// Windows' caption buttons: no wash at rest, a light one under the pointer (the close button
+/// red, its glyph white), and a 10-point glyph of hairlines centred in the rectangle.
+fn paint_windows(painter: &egui::Painter, rect: Rect, button: Button, maximized: bool, t: &Tokens, response: &egui::Response) {
+    let down = response.is_pointer_button_down_on();
+    let hot = response.hovered() || down;
+    let (fill, ink) = match button {
+        Button::Close if down => (CLOSE_PRESSED, Color32::WHITE),
+        Button::Close if hot => (CLOSE_HOVER, Color32::WHITE),
+        _ if down => (t.text.gamma_multiply(0.14), t.text),
+        _ if hot => (t.text.gamma_multiply(0.08), t.text),
+        _ => (Color32::TRANSPARENT, t.text),
+    };
+    if fill != Color32::TRANSPARENT {
+        painter.rect_filled(rect, 0.0, fill);
+    }
+    if response.has_focus() {
+        painter.rect_stroke(rect.shrink(2.0), 2.0, Stroke::new(1.0, t.accent), egui::StrokeKind::Inside);
+    }
+    let stroke = Stroke::new(1.0, ink);
+    let c = rect.center();
+    let at = |x: f32, y: f32| Pos2::new((c.x - 5.0 + x).round() + 0.5, (c.y - 5.0 + y).round() + 0.5);
+    match button {
+        Button::Minimize => {
+            painter.line_segment([at(0.0, 5.0), at(10.0, 5.0)], stroke);
+        }
+        Button::Maximize if maximized => {
+            painter.rect_stroke(Rect::from_two_pos(at(0.0, 2.0), at(8.0, 10.0)), 1.0, stroke, egui::StrokeKind::Middle);
+            painter.line_segment([at(2.0, 2.0), at(2.0, 0.0)], stroke);
+            painter.line_segment([at(2.0, 0.0), at(10.0, 0.0)], stroke);
+            painter.line_segment([at(10.0, 0.0), at(10.0, 8.0)], stroke);
+            painter.line_segment([at(10.0, 8.0), at(8.0, 8.0)], stroke);
+        }
+        Button::Maximize => {
+            painter.rect_stroke(Rect::from_two_pos(at(0.0, 0.0), at(10.0, 10.0)), 1.0, stroke, egui::StrokeKind::Middle);
+        }
+        Button::Close => {
+            painter.line_segment([at(0.0, 0.0), at(10.0, 10.0)], stroke);
+            painter.line_segment([at(10.0, 0.0), at(0.0, 10.0)], stroke);
         }
     }
 }

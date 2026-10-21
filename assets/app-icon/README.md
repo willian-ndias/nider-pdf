@@ -1,28 +1,22 @@
-# PdfCraft app icon
+# Nider PDF app icon
 
-<img src="pdfcraft-small.svg" alt="PdfCraft app icon: an engraved lion's head on green" width="128">
+<img src="pdfcraft-small.svg" alt="Nider PDF app icon: a sheet with a red PDF label on a graphite tile, the Nider mark in the corner" width="128">
 
-**Creature:** a lion, in a frontal head-and-shoulders portrait, mane running off the bottom of the tile.
+**Design:** the Nider app family (Nider PDF, Nider Text, Nider Etapas): a graphite tile with a silver edge,
+the app's symbol in the middle (a sheet with a red **PDF** label) and the Nider mark (hexagon, six
+vertex hexagons, the Southern Cross) cropped into the lower-right corner in the app's colour.
 
-**Style:** an engraving (woodcut-weight line work) portrait in the Crafting Apps "owl template" framing:
-a full-bleed colour field, no frame or roundel, the animal looking at the viewer and filling the tile.
+**Palette:** graphite `#232830`→`#0b0e12`, silver edge `#3a414b`, paper `#E9ECF0`, Nider PDF red `#F2564F`.
 
-**Palette:** exactly three colours.
+**Tile:** `viewBox="0 0 256 256"`, a rounded square (`rx=56`) with a small margin; everything inside it.
+The lettering is outlines (no font dependency), so every renderer draws it the same.
 
-| Colour | Hex | Used for |
-|---|---|---|
-| Ink | `#0b0b0c` | line work and the figure's contour |
-| Paper | `#efe9dc` | the figure (the lion's silhouette) |
-| PdfCraft green (app colour) | `#12a58a` | the full-bleed field |
+**Provenance:** original artwork by the project owner (Nider), drawn as code. Licence:
+[LICENSE.txt](LICENSE.txt) (`MIT OR Apache-2.0`, like the repo). The lettering's outlines come from
+Liberation Sans Bold (SIL OFL 1.1), which allows this use.
 
-**Tile:** `viewBox="0 0 512 512"`, a rounded square with `rx=112` that clips everything. Windows and Linux
-icons use the full-bleed tile. macOS icons put it on Apple's grid (an 824 px body centred on a transparent
-1024 px canvas).
-
-**Provenance:** the project owner's original drawing, made in ArtCraft (2880 px, keyed to the palette), then
-vectorised with craftrules `assets/logo-options/_tools/vectorize_tile.py` (potrace; no filtering or
-warping). The source drawing is kept in craftrules at `assets/app-icons/pdfcraft/source.png`, not here.
-Licence: [LICENSE.txt](LICENSE.txt) (`MIT OR Apache-2.0`, like the repo).
+**Crispness rule:** in the app the icon is always drawn from the vector (`widgets::nider_brand`); PNGs are
+only for the system (taskbar, Dock, Linux theme). Never scale a small PNG down for the UI.
 
 ## Files
 

@@ -20,6 +20,15 @@ pub(crate) fn app_drawn() -> Option<Layout> {
     drawn.then(button_layout)
 }
 
+/// Windows: the app draws its own title bar (minimize, maximize and close on the right) unless
+/// `PDFCRAFT_TITLEBAR=system` asks for the system's caption.
+pub(crate) fn windows_app_drawn() -> Option<Layout> {
+    match std::env::var("PDFCRAFT_TITLEBAR").ok().as_deref().map(str::trim) {
+        Some("system") => None,
+        _ => Some(Layout::default()),
+    }
+}
+
 /// GNOME's button order, or minimize, maximize and close on the right when it names none.
 fn button_layout() -> Layout {
     #[cfg(any(target_os = "linux", target_os = "freebsd", target_os = "openbsd", target_os = "netbsd"))]

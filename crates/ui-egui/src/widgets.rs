@@ -519,6 +519,25 @@ pub fn artcraft_mark(ui: &mut egui::Ui, size: f32) -> Response {
     )
 }
 
+/// The Nider PDF brand for the title bar: the app icon (assets/app-icon/pdfcraft.svg, drawn as a
+/// vector so it stays crisp at every scale) `size` points square, then the name, "PDF" in the
+/// app's colour.
+pub fn nider_brand(ui: &mut egui::Ui, size: f32) -> Response {
+    let t = crate::theme::Tokens::get(ui.ctx());
+    ui.scope(|ui| {
+        ui.spacing_mut().item_spacing.x = 7.0;
+        ui.add(
+            egui::Image::from_bytes("bytes://nider-pdf-icon.svg", include_bytes!("../../../assets/app-icon/pdfcraft.svg"))
+                .fit_to_exact_size(vec2(size, size))
+                .alt_text("Nider PDF"),
+        );
+        ui.spacing_mut().item_spacing.x = 0.0;
+        ui.label(egui::RichText::new("NIDER ").font(crate::theme::semibold(14.0)).color(t.text).extra_letter_spacing(0.6));
+        ui.label(egui::RichText::new("PDF").font(crate::theme::semibold(14.0)).color(t.accent_text).extra_letter_spacing(0.6));
+    })
+    .response
+}
+
 /// Buttons for every community link (`pdfcraft_engine::links`), Discord first and prominent.
 /// Returns the registry command of the one clicked.
 pub fn community_links(ui: &mut egui::Ui) -> Option<&'static str> {
