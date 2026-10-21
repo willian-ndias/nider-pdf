@@ -22,9 +22,9 @@ const MAC_LIGHTS_LEFT: f32 = 10.0;
 /// lights plus the same gap the lights keep from the top of the window.
 pub const MAC_CONTENT_LEFT: f32 = MAC_LIGHTS_LEFT + 2.0 * MAC_LIGHT_PITCH + MAC_LIGHT + (MAC_TITLE_BAR - MAC_LIGHT) / 2.0;
 /// The strip and its controls everywhere else.
-const TAB_STRIP: f32 = 38.0;
-const TAB_HEIGHT: f32 = 30.0;
-const STRIP_BUTTON: f32 = 28.0;
+const TAB_STRIP: f32 = 54.0;
+const TAB_HEIGHT: f32 = 36.0;
+const STRIP_BUTTON: f32 = 34.0;
 
 pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
@@ -37,7 +37,7 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
     let flush = window_controls::WINDOWS_STYLE && app.draws_window_frame() && !ui.ctx().input(|i| i.viewport().fullscreen.unwrap_or(false));
     egui::Panel::top("tab_strip")
         .exact_size(if mac { MAC_TITLE_BAR } else { TAB_STRIP })
-        .frame(egui::Frame::NONE.fill(t.titlebar).inner_margin(egui::Margin { left, right: if flush { 0 } else { 10 }, top: 0, bottom: 0 }))
+        .frame(egui::Frame::NONE.inner_margin(egui::Margin { left: if mac { left } else { 16 }, right: if flush { 0 } else { 10 }, top: 0, bottom: 0 }))
         .show(ui, |ui| {
             let full = ui.max_rect();
             let drag = ui.interact(full, ui.id().with("titledrag"), Sense::click_and_drag());
@@ -452,13 +452,16 @@ fn tab(
     let sense = if draggable { Sense::click_and_drag() } else { Sense::click() };
     let resp = craft_ui::tabs::Tab::new(id, &a11y, active).sense(sense).focus_stroke(Stroke::new(1.0, t.accent)).show_at(ui, rect, |ui, resp| {
         let press = theme::Press::track(ui, resp);
+        // Vidro: the open document is a rounded glass tab; the others are text until hovered.
+        let well = rect.shrink2(vec2(0.0, ((rect.height() - 36.0) / 2.0).max(0.0)));
         let bg = if active {
-            press.fill(t.chrome, t.chrome.lerp_to_gamma(t.hover, 0.65), t.hover)
+            press.fill(t.glass, t.glass.lerp_to_gamma(t.hover, 0.65), t.hover)
         } else {
             press.fill(Color32::TRANSPARENT, t.hover, t.pressed)
         };
         if bg.a() > 0 {
-            ui.painter().rect_filled(rect, CornerRadius { nw: 7, ne: 7, sw: 0, se: 0 }, bg);
+            let edge = if active { Stroke::new(1.0, t.glass_edge) } else { Stroke::NONE };
+            ui.painter().rect(well, CornerRadius::same(12), bg, edge, egui::StrokeKind::Inside);
         }
         icons::paint(
             ui,
@@ -495,10 +498,15 @@ fn tab(
 
 pub fn mode_bar(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
+    // Vidro: the menu row is a rounded glass card floating on the backdrop.
     egui::Panel::top("mode_bar")
-        .exact_size(48.0)
-        .frame(egui::Frame::NONE.fill(t.chrome).inner_margin(egui::Margin::symmetric(10, 0)).stroke(Stroke::new(1.0, t.divider)))
+        .exact_size(56.0)
+        .frame(egui::Frame::NONE.inner_margin(egui::Margin { left: 16, right: 16, top: 0, bottom: 8 }))
         .show(ui, |ui| {
+            let card = ui.max_rect();
+            ui.painter().rect(card, CornerRadius::same(18), t.glass, Stroke::new(1.0, t.glass_edge), egui::StrokeKind::Inside);
+            let mut inner = ui.new_child(egui::UiBuilder::new().max_rect(card.shrink2(vec2(10.0, 0.0))).layout(Layout::left_to_right(Align::Center)));
+            let ui = &mut inner;
             ui.horizontal_centered(|ui| {
                 ui.spacing_mut().item_spacing.x = 2.0;
                 main_menu(app, ui);
@@ -640,8 +648,8 @@ pub fn right_rail(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
     let labels: Vec<String> = doc.info.pages.iter().map(|p| p.label.clone()).collect();
     egui::Panel::right("rail")
         .resizable(false)
-        .exact_size(48.0)
-        .frame(egui::Frame::NONE.fill(t.chrome).inner_margin(egui::Margin::symmetric(6, 8)).stroke(Stroke::new(1.0, t.divider)))
+        .exact_size(64.0)
+        .frame(t.glass_frame().inner_margin(egui::Margin::symmetric(6, 10)).outer_margin(egui::Margin { left: 0, right: 16, top: 6, bottom: 16 }))
         .show(ui, |ui| {
             ui.spacing_mut().item_spacing.y = 4.0;
             let mut rail_button = |ui: &mut egui::Ui, panel: RightPanel, icon: &str, tip: &str, has: bool| {

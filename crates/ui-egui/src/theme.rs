@@ -16,9 +16,9 @@ pub enum ThemeKind {
 /// The saved user choice, independent of the light/dark colours currently displayed.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum ThemePreference {
+    #[default]
     System,
     Light,
-    #[default]
     Dark,
 }
 
@@ -64,61 +64,86 @@ pub struct Tokens {
     pub field: Color32,
     pub badge_new: Color32,
     pub page_shadow: Color32,
+    /// Window backdrop: a vertical gradient with a soft glow of the app's colour at the top left.
+    pub backdrop_top: Color32,
+    pub backdrop_bottom: Color32,
+    pub glow: Color32,
+    /// Glass cards (ribbon, side panels) and their light edge.
+    pub glass: Color32,
+    pub glass_edge: Color32,
+    /// The open menu tab: a silver pill (dark ink in the light theme).
+    pub pill: Color32,
+    pub pill_text: Color32,
     pub radius: u8,
 }
 
 impl Tokens {
     pub fn for_kind(kind: ThemeKind) -> Self {
         match kind {
+            // Nider "Vidro" (modelo B do canvas "Nider apps — visual novo"), versão clara.
             ThemeKind::Light => Self {
                 kind,
-                titlebar: Color32::from_rgb(0xE9, 0xE9, 0xEB),
-                chrome: Color32::from_rgb(0xFF, 0xFF, 0xFF),
-                panel: Color32::from_rgb(0xFF, 0xFF, 0xFF),
-                pasteboard: Color32::from_rgb(0xF1, 0xF1, 0xF3),
+                titlebar: Color32::from_rgb(0xE4, 0xE8, 0xEC),
+                chrome: Color32::from_rgb(0xF6, 0xF7, 0xF9),
+                panel: Color32::from_rgb(0xF6, 0xF7, 0xF9),
+                pasteboard: Color32::from_rgb(0xDC, 0xE0, 0xE5),
                 card: Color32::from_rgb(0xFF, 0xFF, 0xFF),
-                border: Color32::from_rgb(0xDA, 0xDA, 0xDE),
-                divider: Color32::from_rgb(0xE8, 0xE8, 0xEB),
-                text: Color32::from_rgb(0x22, 0x22, 0x26),
-                text_muted: Color32::from_rgb(0x5E, 0x5E, 0x66),
-                text_faint: Color32::from_rgb(0x6B, 0x6B, 0x73),
-                icon: Color32::from_rgb(0x44, 0x44, 0x4B),
-                hover: Color32::from_rgb(0xF0, 0xF0, 0xF3),
-                pressed: Color32::from_rgb(0xE4, 0xE4, 0xE9),
-                selected: Color32::from_rgb(0xE6, 0xEE, 0xFD),
-                accent: Color32::from_rgb(0x1B, 0x63, 0xE0),
-                accent_text: Color32::from_rgb(0x17, 0x55, 0xC4),
-                accent_soft: Color32::from_rgb(0xE3, 0xEC, 0xFD),
+                border: Color32::from_rgb(0xCD, 0xD3, 0xDA),
+                divider: Color32::from_rgb(0xDF, 0xE3, 0xE8),
+                text: Color32::from_rgb(0x1B, 0x1F, 0x27),
+                text_muted: Color32::from_rgb(0x4E, 0x55, 0x62),
+                text_faint: Color32::from_rgb(0x5F, 0x67, 0x73),
+                icon: Color32::from_rgb(0x3A, 0x41, 0x4B),
+                hover: Color32::from_rgb(0xE6, 0xE9, 0xED),
+                pressed: Color32::from_rgb(0xD8, 0xDD, 0xE3),
+                selected: Color32::from_rgb(0xFA, 0xDC, 0xDA),
+                accent: Color32::from_rgb(0xD9, 0x3A, 0x33),
+                accent_text: Color32::from_rgb(0xB9, 0x2E, 0x28),
+                accent_soft: Color32::from_rgb(0xFA, 0xDC, 0xDA),
                 field: Color32::from_rgb(0xFF, 0xFF, 0xFF),
-                badge_new: Color32::from_rgb(0x1B, 0x63, 0xE0),
-                page_shadow: Color32::from_black_alpha(34),
-                radius: 6,
+                badge_new: Color32::from_rgb(0xD9, 0x3A, 0x33),
+                backdrop_top: Color32::from_rgb(0xF1, 0xF3, 0xF5),
+                backdrop_bottom: Color32::from_rgb(0xD9, 0xDE, 0xE4),
+                glow: Color32::from_rgb(0xF6, 0xDE, 0xDC),
+                glass: Color32::from_rgb(0xF7, 0xF8, 0xFA),
+                glass_edge: Color32::from_rgb(0xFF, 0xFF, 0xFF),
+                pill: Color32::from_rgb(0x1B, 0x1F, 0x27),
+                pill_text: Color32::from_rgb(0xF5, 0xF2, 0xEC),
+                page_shadow: Color32::from_black_alpha(40),
+                radius: 8,
             },
-            // Nider Titânio (the Nider Terminal's chrome, NIDER_VISUAL §17): graphite surfaces,
-            // silver lines and warm light text; the accent is the app's red (its icon).
+            // Nider "Vidro" escuro: fundo grafite com brilho, cartões de vidro, pílula prata na
+            // aba aberta e o vermelho do app como destaque.
             ThemeKind::Dark => Self {
                 kind,
-                titlebar: Color32::from_rgb(0x2B, 0x30, 0x38),
-                chrome: Color32::from_rgb(0x26, 0x2B, 0x32),
-                panel: Color32::from_rgb(0x20, 0x24, 0x2A),
-                pasteboard: Color32::from_rgb(0x17, 0x1B, 0x21),
-                card: Color32::from_rgb(0x2A, 0x2F, 0x36),
-                border: Color32::from_rgb(0x3A, 0x40, 0x48),
-                divider: Color32::from_rgb(0x30, 0x35, 0x3D),
-                text: Color32::from_rgb(0xF2, 0xF4, 0xF6),
-                text_muted: Color32::from_rgb(0xAE, 0xB4, 0xBB),
-                text_faint: Color32::from_rgb(0x7E, 0x85, 0x8D),
-                icon: Color32::from_rgb(0xD6, 0xDC, 0xE2),
-                hover: Color32::from_rgb(0x34, 0x3A, 0x43),
-                pressed: Color32::from_rgb(0x3E, 0x45, 0x4F),
-                selected: Color32::from_rgb(0x4A, 0x2A, 0x2E),
-                accent: Color32::from_rgb(0xFF, 0x4D, 0x5E),
-                accent_text: Color32::from_rgb(0xFF, 0x85, 0x90),
-                accent_soft: Color32::from_rgb(0x45, 0x25, 0x2A),
-                field: Color32::from_rgb(0x1B, 0x1F, 0x25),
-                badge_new: Color32::from_rgb(0xFF, 0x4D, 0x5E),
-                page_shadow: Color32::from_black_alpha(120),
-                radius: 6,
+                titlebar: Color32::from_rgb(0x0B, 0x0E, 0x13),
+                chrome: Color32::from_rgb(0x16, 0x1A, 0x21),
+                panel: Color32::from_rgb(0x13, 0x17, 0x1D),
+                pasteboard: Color32::from_rgb(0x0A, 0x0D, 0x11),
+                card: Color32::from_rgb(0x1A, 0x1F, 0x26),
+                border: Color32::from_rgb(0x26, 0x2B, 0x33),
+                divider: Color32::from_rgb(0x20, 0x25, 0x2C),
+                text: Color32::from_rgb(0xF5, 0xF2, 0xEC),
+                text_muted: Color32::from_rgb(0xB8, 0xB4, 0xAE),
+                text_faint: Color32::from_rgb(0x8A, 0x93, 0x9C),
+                icon: Color32::from_rgb(0xD9, 0xDE, 0xE4),
+                hover: Color32::from_rgb(0x23, 0x29, 0x30),
+                pressed: Color32::from_rgb(0x2C, 0x33, 0x3C),
+                selected: Color32::from_rgb(0x3A, 0x22, 0x24),
+                accent: Color32::from_rgb(0xF2, 0x56, 0x4F),
+                accent_text: Color32::from_rgb(0xFF, 0x85, 0x80),
+                accent_soft: Color32::from_rgb(0x3A, 0x22, 0x24),
+                field: Color32::from_rgb(0x0F, 0x12, 0x16),
+                badge_new: Color32::from_rgb(0xF2, 0x56, 0x4F),
+                backdrop_top: Color32::from_rgb(0x14, 0x18, 0x20),
+                backdrop_bottom: Color32::from_rgb(0x07, 0x09, 0x0C),
+                glow: Color32::from_rgb(0x2A, 0x14, 0x16),
+                glass: Color32::from_rgb(0x16, 0x1A, 0x21),
+                glass_edge: Color32::from_rgb(0x2E, 0x34, 0x3D),
+                pill: Color32::from_rgb(0xD9, 0xDE, 0xE4),
+                pill_text: Color32::from_rgb(0x07, 0x09, 0x0C),
+                page_shadow: Color32::from_black_alpha(150),
+                radius: 8,
             },
         }
     }
@@ -130,6 +155,28 @@ impl Tokens {
     pub fn dark(&self) -> bool {
         self.kind == ThemeKind::Dark
     }
+
+    /// A rounded glass card (ribbon, side panels), with the light edge of the Vidro look.
+    pub fn glass_frame(&self) -> egui::Frame {
+        egui::Frame::NONE.fill(self.glass).stroke(Stroke::new(1.0, self.glass_edge)).corner_radius(CornerRadius::same(18))
+    }
+}
+
+/// Paints the Vidro backdrop behind every panel: the vertical gradient, with the app's colour
+/// glowing softly at the top left.
+pub fn paint_backdrop(ctx: &egui::Context) {
+    let t = Tokens::get(ctx);
+    let rect = ctx.content_rect();
+    let painter = ctx.layer_painter(egui::LayerId::background());
+    let mut mesh = egui::Mesh::default();
+    let top_left = t.backdrop_top.lerp_to_gamma(t.glow, 0.85);
+    let corners = [(rect.left_top(), top_left), (rect.right_top(), t.backdrop_top), (rect.right_bottom(), t.backdrop_bottom), (rect.left_bottom(), t.backdrop_bottom)];
+    for (pos, color) in corners {
+        mesh.colored_vertex(pos, color);
+    }
+    mesh.add_triangle(0, 1, 2);
+    mesh.add_triangle(0, 2, 3);
+    painter.add(egui::Shape::mesh(mesh));
 }
 
 /// Hover and press amounts for chrome controls. The wash eases in; holding the pointer

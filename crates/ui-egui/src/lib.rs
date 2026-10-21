@@ -3152,6 +3152,7 @@ impl eframe::App for PdfCraftApp {
             return;
         }
         self.sync_window_frame(&ctx);
+        theme::paint_backdrop(&ctx);
         if self.draws_window_frame() {
             window_controls::resize_edges(&ctx);
         }
@@ -3167,12 +3168,19 @@ impl eframe::App for PdfCraftApp {
                     .resizable(true)
                     .default_size(330.0)
                     .size_range(260.0..=520.0)
-                    .frame(egui::Frame::NONE)
+                    .frame(theme::Tokens::get(&ctx).glass_frame().inner_margin(6).outer_margin(egui::Margin { left: 0, right: 12, top: 6, bottom: 16 }))
                     .show(ui, |ui| panels::right_panel(self, ui));
             }
         }
         let t = theme::Tokens::get(&ctx);
-        egui::CentralPanel::default().frame(egui::Frame::NONE.fill(t.pasteboard)).show(ui, |ui| {
+        // Vidro: the work area is a rounded, darker glass card on the backdrop.
+        let work = egui::Frame::NONE
+            .fill(t.pasteboard)
+            .stroke(egui::Stroke::new(1.0, t.border))
+            .corner_radius(egui::CornerRadius::same(18))
+            .inner_margin(6)
+            .outer_margin(egui::Margin { left: 16, right: if self.active.is_some() { 12 } else { 16 }, top: 6, bottom: 16 });
+        egui::CentralPanel::default().frame(work).show(ui, |ui| {
             if self.mode == Mode::Read {
                 match self.active {
                     None if self.combine_showing() => combine_ui::page(self, ui),

@@ -21,7 +21,7 @@ pub fn left_panel(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
     if app.left == LeftPanel::Tool("organize") && app.active.and_then(|i| app.views.get(i)).is_some_and(|v| !v.organize) {
         app.left = crate::organize_panel::workspace_panel(app.mode);
     }
-    egui::Frame::NONE.fill(t.panel).inner_margin(egui::Margin { left: 14, right: 10, top: 12, bottom: 10 }).stroke(Stroke::new(1.0, t.divider)).show(
+    egui::Frame::NONE.fill(t.glass).corner_radius(egui::CornerRadius::same(14)).inner_margin(egui::Margin { left: 14, right: 10, top: 12, bottom: 10 }).stroke(Stroke::new(1.0, t.glass_edge)).show(
         ui,
         |ui| match app.left {
             // Organize pages has its own panel whenever the grid shows (with a document open).
@@ -533,9 +533,10 @@ pub fn right_panel(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
         // A dialog or the palette owns the keyboard: the panel leaves Escape to it.
         let modal = app.dialog.is_some() || app.palette_open;
         egui::Frame::NONE
-            .fill(t.panel)
+            .fill(t.glass)
+            .corner_radius(egui::CornerRadius::same(14))
             .inner_margin(egui::Margin { left: 14, right: 12, top: 12, bottom: 8 })
-            .stroke(Stroke::new(1.0, t.divider))
+            .stroke(Stroke::new(1.0, t.glass_edge))
             .show(ui, |ui| {
                 let (title, count) = match panel {
                     RightPanel::Comments => ("Comments", Some(crate::comments_panel::count(info))),

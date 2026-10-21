@@ -103,28 +103,21 @@ pub(crate) fn paint_left(ui: &egui::Ui, pos: egui::Pos2, text: &str, font: egui:
     ui.painter().with_clip_rect(clip).text(pos, Align2::LEFT_CENTER, shown, font, color);
 }
 
-/// A mode-bar tab: text with an underline when active.
+/// A mode-bar tab. Vidro: a pill; the open one is filled silver (dark ink in the light theme).
 pub fn mode_tab(ui: &mut egui::Ui, label: &str, active: bool) -> Response {
     let t = Tokens::get(ui.ctx());
-    let font = if active { theme::semibold(13.5) } else { theme::medium(13.5) };
+    let font = if active { theme::semibold(13.0) } else { theme::medium(13.0) };
     let w = ui.fonts_mut(|f| f.layout_no_wrap(label.to_owned(), font.clone(), t.text).size().x);
-    let (rect, resp) = ui.allocate_exact_size(vec2(w + 22.0, 48.0), Sense::click());
+    let (rect, resp) = ui.allocate_exact_size(vec2(w + 28.0, 34.0), Sense::click());
     resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, ui.is_enabled(), active, label));
     let press = theme::Press::track(ui, &resp);
-    let well = rect.shrink2(vec2(2.0, 9.0));
     if active {
-        if press.down > 0.01 {
-            ui.painter().rect_filled(well, CornerRadius::same(6), t.pressed.gamma_multiply(press.down));
-        }
+        ui.painter().rect_filled(rect, CornerRadius::same(17), t.pill.lerp_to_gamma(t.pressed, press.down * 0.3));
     } else {
-        press.wash(ui, well, 6, false);
+        press.wash(ui, rect, 17, false);
     }
     let body = rect.translate(press.offset());
-    ui.painter().text(body.center(), Align2::CENTER_CENTER, label, font, if active { t.text } else { t.text_muted });
-    if active {
-        let r = Rect::from_min_max(rect.left_bottom() + vec2(10.0, -2.0), rect.right_bottom() - vec2(10.0, 0.0));
-        ui.painter().rect_filled(r, CornerRadius { nw: 1, ne: 1, sw: 0, se: 0 }, t.accent);
-    }
+    ui.painter().text(body.center(), Align2::CENTER_CENTER, label, font, if active { t.pill_text } else { t.text_muted });
     theme::hand(resp)
 }
 
@@ -174,7 +167,7 @@ pub fn search_box(ui: &mut egui::Ui, placeholder: &str, width: f32) -> Response 
     let press = theme::Press::track(ui, &resp);
     let fill = press.fill(t.field, t.hover, t.pressed);
     let edge = t.border.lerp_to_gamma(t.text_muted, press.hover * 0.35);
-    ui.painter().rect(rect, CornerRadius::same(16), fill, Stroke::new(1.0, edge), egui::StrokeKind::Inside);
+    ui.painter().rect(rect, CornerRadius::same(12), fill, Stroke::new(1.0, edge), egui::StrokeKind::Inside);
     icons::paint(ui, Rect::from_min_size(rect.min + vec2(10.0, 8.0), vec2(16.0, 16.0)), "search", 15.0, t.text_muted);
     let shortcut = crate::commands::command_shortcut_label(ui.ctx(), "view.palette");
     let shortcut = ui.painter().layout_no_wrap(shortcut, theme::regular(11.5), t.text_faint);
@@ -532,8 +525,8 @@ pub fn nider_brand(ui: &mut egui::Ui, size: f32) -> Response {
                 .alt_text("Nider PDF"),
         );
         ui.spacing_mut().item_spacing.x = 0.0;
-        ui.label(egui::RichText::new("NIDER ").font(crate::theme::semibold(14.0)).color(t.text).extra_letter_spacing(0.6));
-        ui.label(egui::RichText::new("PDF").font(crate::theme::semibold(14.0)).color(t.accent_text).extra_letter_spacing(0.6));
+        ui.label(egui::RichText::new("NIDER ").font(crate::theme::semibold(16.0)).color(t.text).extra_letter_spacing(1.2));
+        ui.label(egui::RichText::new("PDF").font(crate::theme::semibold(16.0)).color(t.accent_text).extra_letter_spacing(1.2));
     })
     .response
 }
