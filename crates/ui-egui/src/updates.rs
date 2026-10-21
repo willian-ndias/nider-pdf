@@ -55,6 +55,75 @@ pub(crate) enum Check {
     Done(Result<Release, String>),
 }
 
+/// Nider: "Atualizar agora" baixa o instalador e o abre em modo "/atualizar" (ele espera o app
+/// fechar, troca a versão instalada e reabre o Nider PDF), como no Nider Etapas.
+#[cfg(not(target_arch = "wasm32"))]
+mod auto {
+    use std::sync::Mutex;
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    static BAIXANDO: AtomicBool = AtomicBool::new(false);
+    static ERRO: Mutex<Option<String>> = Mutex::new(None);
+
+    pub(crate) fn baixando() -> bool {
+        BAIXANDO.load(Ordering::Relaxed)
+    }
+
+    pub(crate) fn erro() -> Option<String> {
+        ERRO.lock().ok().and_then(|g| g.clone())
+    }
+
+    fn set_erro(msg: Option<String>) {
+        if let Ok(mut g) = ERRO.lock() {
+            *g = msg;
+        }
+    }
+
+    /// Só o link direto do instalador do site Nider (não a página de downloads).
+    pub(crate) fn e_instalador(url: &str) -> bool {
+        url.starts_with("https://nider.com.br/api/apps/") && !url.contains(['"', '\\', ' '])
+    }
+
+    pub(crate) fn atualizar(ctx: egui::Context, versao: String, link: String) {
+        BAIXANDO.store(true, Ordering::Relaxed);
+        set_erro(None);
+        std::thread::spawn(move || {
+            let resultado = (|| -> Result<(), String> {
+                let nome: String = versao.chars().filter(|c| c.is_ascii_alphanumeric() || *c == '.' || *c == '-').take(40).collect();
+                let destino = std::env::temp_dir().join(format!("nider-pdf-setup-{nome}.exe"));
+                let mut cmd = std::process::Command::new("curl");
+                cmd.args(["-s", "-f", "-L", "-m", "900", "-o"]).arg(&destino).arg(&link);
+                #[cfg(windows)]
+                {
+                    use std::os::windows::process::CommandExt;
+                    cmd.creation_flags(0x0800_0000);
+                }
+                if !cmd.status().map(|s| s.success()).unwrap_or(false) {
+                    return Err("Não consegui baixar a versão nova. Confira a internet e tente de novo.".into());
+                }
+                // Só um instalador do Windows (começa com "MZ") é aberto.
+                let mut cabeca = [0u8; 2];
+                let lido = std::fs::File::open(&destino).and_then(|mut f| std::io::Read::read_exact(&mut f, &mut cabeca));
+                if lido.is_err() || &cabeca != b"MZ" {
+                    let _ = std::fs::remove_file(&destino);
+                    return Err("O arquivo baixado não é um instalador do Windows.".into());
+                }
+                std::process::Command::new(&destino).arg("/atualizar").spawn().map_err(|e| format!("Não consegui abrir o instalador: {e}"))?;
+                Ok(())
+            })();
+            match resultado {
+                // O instalador assume: fecha o app (alterações não salvas são perguntadas antes).
+                Ok(()) => ctx.send_viewport_cmd(egui::ViewportCommand::Close),
+                Err(e) => {
+                    set_erro(Some(e));
+                    BAIXANDO.store(false, Ordering::Relaxed);
+                }
+            }
+            ctx.request_repaint();
+        });
+    }
+}
+
 #[derive(Default)]
 pub(crate) struct Updates {
     pub(crate) check: Check,
@@ -198,8 +267,35 @@ pub(crate) fn dialog(app: &mut PdfCraftApp, ctx: &egui::Context) {
                 .small(),
         );
         ui.add_space(12.0);
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            if let Some(e) = auto::erro() {
+                ui.label(egui::RichText::new(e).color(t.accent_text));
+                ui.add_space(6.0);
+            }
+            if auto::baixando() {
+                ui.horizontal(|ui| {
+                    ui.spinner();
+                    ui.label("Baixando a versão nova… o Nider PDF vai fechar, atualizar e abrir de novo.");
+                });
+                return;
+            }
+        }
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
             if let Some(url) = download.take() {
+                // Nider: com o link direto do instalador, atualiza sozinho (sem navegador).
+                #[cfg(not(target_arch = "wasm32"))]
+                if auto::e_instalador(&url) {
+                    if widgets::pill_button(ui, "Atualizar agora", true).clicked() {
+                        let versao = match &app.updates.check {
+                            Check::Done(Ok(r)) => r.version.clone(),
+                            _ => String::new(),
+                        };
+                        auto::atualizar(ui.ctx().clone(), versao, url);
+                    }
+                    close = widgets::pill_button(ui, tl!("Later"), false).clicked();
+                    return;
+                }
                 let get = widgets::pill_button(ui, tl!("Download"), true).clicked();
                 let later = widgets::pill_button(ui, tl!("Later"), false).clicked();
                 close = get || later;
