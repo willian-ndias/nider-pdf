@@ -4,7 +4,8 @@ use std::time::Duration;
 
 use pdfcraft_ui_egui::updates::{RELEASES_PAGE, Release};
 
-const LATEST: &str = "https://api.github.com/repos/storytold/pdfcraft/releases/latest";
+// Nider PDF: a versão publicada vem do site Nider (que lê o GitHub privado), não do PdfCraft original.
+const LATEST: &str = "https://nider.com.br/api/apps/nider-pdf/versao";
 
 /// The latest release. The answer is untrusted: its size is capped, and only a page under
 /// [`RELEASES_PAGE`] is ever offered for download (anything else falls back to that list).
@@ -16,7 +17,7 @@ pub fn latest_release() -> Result<Release, String> {
         .new_agent();
     let mut response = agent
         .get(LATEST)
-        .header("Accept", "application/vnd.github+json")
+        .header("Accept", "application/json")
         .header("User-Agent", concat!("Nider PDF/", env!("CARGO_PKG_VERSION")))
         // Read error statuses ourselves: a 403 from GitHub usually means its anonymous
         // rate limit ran out, and the retry time rides along in a response header.
@@ -71,9 +72,10 @@ fn rate_limited(reset: Option<&str>, now: u64) -> String {
 
 fn parse(body: &str) -> Result<Release, String> {
     let v: serde_json::Value = serde_json::from_str(body).map_err(|e| format!("unreadable answer ({e})"))?;
-    let version = v["tag_name"].as_str().filter(|t| !t.is_empty() && t.len() <= 64).ok_or("no release found")?.to_string();
-    let url = v["html_url"]
+    let version = v["versao"].as_str().or_else(|| v["tag_name"].as_str()).filter(|t| !t.is_empty() && t.len() <= 64).ok_or("no release found")?.to_string();
+    let url = v["pagina"]
         .as_str()
+        .or_else(|| v["html_url"].as_str())
         .filter(|u| u.strip_prefix(RELEASES_PAGE).is_some_and(|rest| rest.starts_with('/') && !rest.contains(['?', '#', '\\'])))
         .unwrap_or(RELEASES_PAGE)
         .to_string();

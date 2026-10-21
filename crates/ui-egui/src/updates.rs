@@ -12,7 +12,7 @@ use egui::{Align, Layout};
 use crate::{PdfCraftApp, theme, widgets};
 
 /// Where every PdfCraft release is listed.
-pub const RELEASES_PAGE: &str = "https://github.com/storytold/pdfcraft/releases";
+pub const RELEASES_PAGE: &str = "https://nider.com.br/downloads";
 
 /// The latest published release.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -60,6 +60,10 @@ pub(crate) struct Updates {
     pub(crate) check: Check,
     /// The Updates dialog is showing.
     pub(crate) open: bool,
+    /// Nider: the silent check at start already ran.
+    pub(crate) started: bool,
+    /// Nider: the running check is the silent one; the dialog opens only if a newer version exists.
+    pub(crate) silent: bool,
 }
 
 impl PdfCraftApp {
@@ -96,13 +100,40 @@ impl PdfCraftApp {
     /// Pick up a finished check (each frame).
     pub(crate) fn poll_updates(&mut self) {
         #[cfg(not(target_arch = "wasm32"))]
-        if let Check::Running(rx) = &self.updates.check {
-            let result = match rx.try_recv() {
-                Ok(r) => r,
-                Err(std::sync::mpsc::TryRecvError::Empty) => return,
-                Err(std::sync::mpsc::TryRecvError::Disconnected) => Err("the update check stopped unexpectedly".into()),
-            };
-            self.updates.check = Check::Done(result);
+        {
+            // Nider: uma checagem silenciosa ao abrir; o aviso só aparece se houver versão nova.
+            if !self.updates.started {
+                self.updates.started = true;
+                if let Some(source) = self.update_source.clone() {
+                    if matches!(self.updates.check, Check::Idle) {
+                        let (tx, rx) = std::sync::mpsc::channel();
+                        let ctx = self.ctx.clone();
+                        std::thread::spawn(move || {
+                            let _ = tx.send(source());
+                            if let Some(ctx) = ctx {
+                                ctx.request_repaint();
+                            }
+                        });
+                        self.updates.check = Check::Running(rx);
+                        self.updates.silent = true;
+                    }
+                }
+            }
+            if let Check::Running(rx) = &self.updates.check {
+                let result = match rx.try_recv() {
+                    Ok(r) => r,
+                    Err(std::sync::mpsc::TryRecvError::Empty) => return,
+                    Err(std::sync::mpsc::TryRecvError::Disconnected) => Err("the update check stopped unexpectedly".into()),
+                };
+                let newer = matches!(&result, Ok(r) if is_newer(&r.version, env!("CARGO_PKG_VERSION")));
+                self.updates.check = Check::Done(result);
+                if self.updates.silent {
+                    self.updates.silent = false;
+                    if newer {
+                        self.updates.open = true;
+                    }
+                }
+            }
         }
     }
 }
