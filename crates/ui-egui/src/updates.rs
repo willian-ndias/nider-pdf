@@ -275,7 +275,7 @@ pub(crate) fn dialog(app: &mut PdfCraftApp, ctx: &egui::Context) {
             }
             if auto::baixando() {
                 ui.horizontal(|ui| {
-                    ui.spinner();
+                    seta_baixando(ui, t.accent);
                     ui.label("Baixando a versão nova… o Nider PDF vai fechar, atualizar e abrir de novo.");
                 });
                 return;
@@ -315,4 +315,19 @@ pub(crate) fn dialog(app: &mut PdfCraftApp, ctx: &egui::Context) {
             app.open_url(&url);
         }
     }
+}
+
+/// Seta para baixo que desce e some, em ciclo, enquanto o instalador baixa.
+fn seta_baixando(ui: &mut egui::Ui, cor: egui::Color32) {
+    ui.ctx().request_repaint();
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(18.0, 22.0), egui::Sense::hover());
+    let fase = (ui.input(|i| i.time) * 1.5).fract() as f32;
+    let tinta = cor.gamma_multiply(1.0 - fase * 0.85);
+    let cx = rect.center().x;
+    let y = rect.top() + 3.0 + fase * (rect.height() - 12.0);
+    let p = ui.painter();
+    let traco = egui::Stroke::new(2.0, tinta);
+    p.line_segment([egui::pos2(cx, y - 5.0), egui::pos2(cx, y + 3.0)], traco);
+    p.line_segment([egui::pos2(cx - 4.5, y), egui::pos2(cx, y + 5.0)], traco);
+    p.line_segment([egui::pos2(cx + 4.5, y), egui::pos2(cx, y + 5.0)], traco);
 }
