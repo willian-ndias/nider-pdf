@@ -21,9 +21,12 @@ pub fn left_panel(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
     if app.left == LeftPanel::Tool("organize") && app.active.and_then(|i| app.views.get(i)).is_some_and(|v| !v.organize) {
         app.left = crate::organize_panel::workspace_panel(app.mode);
     }
-    egui::Frame::NONE.fill(t.glass).corner_radius(egui::CornerRadius::same(14)).inner_margin(egui::Margin { left: 14, right: 10, top: 12, bottom: 10 }).stroke(Stroke::new(1.0, t.glass_edge)).show(
-        ui,
-        |ui| match app.left {
+    let card = egui::Frame::NONE
+        .fill(t.glass)
+        .corner_radius(egui::CornerRadius::same(14))
+        .inner_margin(egui::Margin { left: 14, right: 10, top: 12, bottom: 10 })
+        .stroke(Stroke::new(1.0, t.glass_edge))
+        .show(ui, |ui| match app.left {
             // Organize pages has its own panel whenever the grid shows (with a document open).
             _ if app.active.is_some() && crate::organize_panel::showing(app) => crate::organize_panel::panel(app, ui, &t),
             LeftPanel::AllTools => all_tools(app, ui, &t),
@@ -31,8 +34,8 @@ pub fn left_panel(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                 Some(g) => tool_detail(app, ui, &t, g),
                 None => app.left = LeftPanel::AllTools,
             },
-        },
-    );
+        });
+    crate::theme::glass_sheen(ui.painter(), card.response.rect, 14.0, &t);
 }
 
 fn panel_header(ui: &mut egui::Ui, t: &Tokens, title: &str, back: bool) -> (bool, bool) {
@@ -532,7 +535,7 @@ pub fn right_panel(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
         let comment_allowed = doc.allows_annotation();
         // A dialog or the palette owns the keyboard: the panel leaves Escape to it.
         let modal = app.dialog.is_some() || app.palette_open;
-        egui::Frame::NONE
+        let card = egui::Frame::NONE
             .fill(t.glass)
             .corner_radius(egui::CornerRadius::same(14))
             .inner_margin(egui::Margin { left: 14, right: 12, top: 12, bottom: 8 })
@@ -761,6 +764,7 @@ pub fn right_panel(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                     }
                 });
             });
+        crate::theme::glass_sheen(ui.painter(), card.response.rect, 14.0, &t);
     }
     if close {
         app.choose_right_panel(None);

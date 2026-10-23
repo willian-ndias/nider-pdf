@@ -3168,7 +3168,12 @@ impl eframe::App for PdfCraftApp {
                     .resizable(true)
                     .default_size(330.0)
                     .size_range(260.0..=520.0)
-                    .frame(theme::Tokens::get(&ctx).glass_frame().inner_margin(6).outer_margin(egui::Margin { left: 0, right: 12, top: 6, bottom: 16 }))
+                    .frame(theme::Tokens::get(&ctx).glass_frame().inner_margin(6).outer_margin(egui::Margin {
+                        left: 0,
+                        right: 12,
+                        top: 6,
+                        bottom: 16,
+                    }))
                     .show(ui, |ui| panels::right_panel(self, ui));
             }
         }
