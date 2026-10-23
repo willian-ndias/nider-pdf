@@ -3,7 +3,9 @@
 //! The desktop app supplies how to ask ([`PdfCraftApp::update_source`]), so this crate has no
 //! network code; without a source (the web build, tests) the command opens the releases page.
 //! PdfCraft never downloads or installs anything itself: the user downloads the new version.
-//! It asks only when the user does: there is no check at start (the owner's decision).
+//! Nider (as in Nider Etapas): it checks at start — a newer version opens the dialog, which asks
+//! Baixar / Depois — and again every 4 hours while the app is open, which only lights the update
+//! button in the title bar. Nothing downloads until Baixar; then the arrow shows the percentage.
 
 use std::sync::Arc;
 
@@ -64,9 +66,28 @@ mod auto {
 
     static BAIXANDO: AtomicBool = AtomicBool::new(false);
     static ERRO: Mutex<Option<String>> = Mutex::new(None);
+    /// Quanto do instalador já chegou, 0–100; acima disso, ainda não se sabe o tamanho.
+    static PORCENTO: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(u8::MAX);
 
     pub(crate) fn baixando() -> bool {
         BAIXANDO.load(Ordering::Relaxed)
+    }
+
+    /// A porcentagem baixada, quando o site informou o tamanho.
+    pub(crate) fn porcento() -> Option<u8> {
+        let p = PORCENTO.load(Ordering::Relaxed);
+        (p <= 100).then_some(p)
+    }
+
+    /// O último `Content-Length` do arquivo de cabeçalhos do curl (depois dos redirecionamentos).
+    fn tamanho(cabecalhos: &std::path::Path) -> Option<u64> {
+        let texto = std::fs::read_to_string(cabecalhos).ok()?;
+        texto
+            .lines()
+            .rev()
+            .filter_map(|l| l.split_once(':'))
+            .filter(|(k, _)| k.trim().eq_ignore_ascii_case("content-length"))
+            .find_map(|(_, v)| v.trim().parse::<u64>().ok())
     }
 
     pub(crate) fn erro() -> Option<String> {
@@ -91,16 +112,37 @@ mod auto {
             let resultado = (|| -> Result<(), String> {
                 let nome: String = versao.chars().filter(|c| c.is_ascii_alphanumeric() || *c == '.' || *c == '-').take(40).collect();
                 let destino = std::env::temp_dir().join(format!("nider-pdf-setup-{nome}.exe"));
+                let cabecalhos = std::env::temp_dir().join(format!("nider-pdf-setup-{nome}.headers"));
+                let _ = std::fs::remove_file(&destino);
                 let mut cmd = std::process::Command::new("curl");
-                cmd.args(["-s", "-f", "-L", "-m", "900", "-o"]).arg(&destino).arg(&link);
+                cmd.args(["-s", "-f", "-L", "-m", "900", "-D"]).arg(&cabecalhos).arg("-o").arg(&destino).arg(&link);
                 #[cfg(windows)]
                 {
                     use std::os::windows::process::CommandExt;
                     cmd.creation_flags(0x0800_0000);
                 }
-                if !cmd.status().map(|s| s.success()).unwrap_or(false) {
+                let mut filho = cmd.spawn().map_err(|_| "Não consegui baixar a versão nova. Confira a internet e tente de novo.".to_string())?;
+                // Enquanto baixa: a porcentagem, pelo tamanho do arquivo contra o que o site informou.
+                let ok = loop {
+                    match filho.try_wait() {
+                        Ok(Some(status)) => break status.success(),
+                        Ok(None) => {}
+                        Err(_) => break false,
+                    }
+                    if let (Some(total), Ok(meta)) = (tamanho(&cabecalhos), std::fs::metadata(&destino))
+                        && total > 0
+                    {
+                        let p = (meta.len().saturating_mul(100) / total).min(99);
+                        PORCENTO.store(u8::try_from(p).unwrap_or(99), Ordering::Relaxed);
+                        ctx.request_repaint();
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(200));
+                };
+                let _ = std::fs::remove_file(&cabecalhos);
+                if !ok {
                     return Err("Não consegui baixar a versão nova. Confira a internet e tente de novo.".into());
                 }
+                PORCENTO.store(100, Ordering::Relaxed);
                 // Só um instalador do Windows (começa com "MZ") é aberto.
                 let mut cabeca = [0u8; 2];
                 let lido = std::fs::File::open(&destino).and_then(|mut f| std::io::Read::read_exact(&mut f, &mut cabeca));
@@ -117,6 +159,7 @@ mod auto {
                 Err(e) => {
                     set_erro(Some(e));
                     BAIXANDO.store(false, Ordering::Relaxed);
+                    PORCENTO.store(u8::MAX, Ordering::Relaxed);
                 }
             }
             ctx.request_repaint();
@@ -133,6 +176,33 @@ pub(crate) struct Updates {
     pub(crate) started: bool,
     /// Nider: the running check is the silent one; the dialog opens only if a newer version exists.
     pub(crate) silent: bool,
+    /// Nider (as in Nider Etapas): a check while the app stays open only lights the update
+    /// button in the title bar; the dialog asks only at start.
+    pub(crate) quiet: bool,
+    /// Nider: when the last check started, to look again every [`RECHECK`].
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) last: Option<std::time::Instant>,
+}
+
+/// Nider (as in Nider Etapas): with the app open, look for a new version again every 4 hours.
+#[cfg(not(target_arch = "wasm32"))]
+const RECHECK: std::time::Duration = std::time::Duration::from_secs(4 * 60 * 60);
+
+/// Is a newer version known (the title bar shows the update button)?
+pub(crate) fn newer_known(app: &PdfCraftApp) -> Option<String> {
+    match &app.updates.check {
+        Check::Done(Ok(r)) if is_newer(&r.version, env!("CARGO_PKG_VERSION")) => Some(r.version.trim_start_matches(['v', 'V']).to_string()),
+        _ => None,
+    }
+}
+
+/// The download under way (the title bar's arrow shows it), and how far, 0–100, when known.
+pub(crate) fn downloading() -> Option<Option<u8>> {
+    #[cfg(not(target_arch = "wasm32"))]
+    if auto::baixando() {
+        return Some(auto::porcento());
+    }
+    None
 }
 
 impl PdfCraftApp {
@@ -171,21 +241,25 @@ impl PdfCraftApp {
         #[cfg(not(target_arch = "wasm32"))]
         {
             // Nider: uma checagem silenciosa ao abrir; o aviso só aparece se houver versão nova.
-            if !self.updates.started {
+            let due =
+                self.updates.last.is_some_and(|t| t.elapsed() >= RECHECK) && !matches!(self.updates.check, Check::Running(_)) && !auto::baixando();
+            if !self.updates.started || due {
+                self.updates.quiet = self.updates.started;
                 self.updates.started = true;
-                if let Some(source) = self.update_source.clone() {
-                    if matches!(self.updates.check, Check::Idle) {
-                        let (tx, rx) = std::sync::mpsc::channel();
-                        let ctx = self.ctx.clone();
-                        std::thread::spawn(move || {
-                            let _ = tx.send(source());
-                            if let Some(ctx) = ctx {
-                                ctx.request_repaint();
-                            }
-                        });
-                        self.updates.check = Check::Running(rx);
-                        self.updates.silent = true;
-                    }
+                self.updates.last = Some(std::time::Instant::now());
+                if let Some(source) = self.update_source.clone()
+                    && !matches!(self.updates.check, Check::Running(_))
+                {
+                    let (tx, rx) = std::sync::mpsc::channel();
+                    let ctx = self.ctx.clone();
+                    std::thread::spawn(move || {
+                        let _ = tx.send(source());
+                        if let Some(ctx) = ctx {
+                            ctx.request_repaint();
+                        }
+                    });
+                    self.updates.check = Check::Running(rx);
+                    self.updates.silent = true;
                 }
             }
             if let Check::Running(rx) = &self.updates.check {
@@ -198,9 +272,15 @@ impl PdfCraftApp {
                 self.updates.check = Check::Done(result);
                 if self.updates.silent {
                     self.updates.silent = false;
-                    if newer {
+                    // At start the dialog asks (Baixar / Depois); later checks only light the
+                    // title bar's update button.
+                    if newer && !self.updates.quiet {
                         self.updates.open = true;
                     }
+                }
+                if let Some(ctx) = &self.ctx {
+                    // Wake up in time for the next check even when nothing else repaints.
+                    ctx.request_repaint_after(RECHECK);
                 }
             }
         }
@@ -276,7 +356,8 @@ pub(crate) fn dialog(app: &mut PdfCraftApp, ctx: &egui::Context) {
             if auto::baixando() {
                 ui.horizontal(|ui| {
                     seta_baixando(ui, t.accent);
-                    ui.label("Baixando a versão nova… o Nider PDF vai fechar, atualizar e abrir de novo.");
+                    let quanto = auto::porcento().map(|p| format!(" {p}%")).unwrap_or_default();
+                    ui.label(format!("Baixando a versão nova{quanto}… o Nider PDF vai fechar, atualizar e abrir de novo."));
                 });
                 return;
             }
@@ -286,14 +367,15 @@ pub(crate) fn dialog(app: &mut PdfCraftApp, ctx: &egui::Context) {
                 // Nider: com o link direto do instalador, atualiza sozinho (sem navegador).
                 #[cfg(not(target_arch = "wasm32"))]
                 if auto::e_instalador(&url) {
-                    if widgets::pill_button(ui, "Atualizar agora", true).clicked() {
+                    // As in Nider Etapas: nothing downloads until Baixar.
+                    if widgets::pill_button(ui, "Baixar", true).clicked() {
                         let versao = match &app.updates.check {
                             Check::Done(Ok(r)) => r.version.clone(),
                             _ => String::new(),
                         };
                         auto::atualizar(ui.ctx().clone(), versao, url);
                     }
-                    close = widgets::pill_button(ui, tl!("Later"), false).clicked();
+                    close = widgets::pill_button(ui, "Depois", false).clicked();
                     return;
                 }
                 let get = widgets::pill_button(ui, tl!("Download"), true).clicked();
@@ -318,7 +400,7 @@ pub(crate) fn dialog(app: &mut PdfCraftApp, ctx: &egui::Context) {
 }
 
 /// Seta para baixo que desce e some, em ciclo, enquanto o instalador baixa.
-fn seta_baixando(ui: &mut egui::Ui, cor: egui::Color32) {
+pub(crate) fn seta_baixando(ui: &mut egui::Ui, cor: egui::Color32) {
     ui.ctx().request_repaint();
     let (rect, _) = ui.allocate_exact_size(egui::vec2(18.0, 22.0), egui::Sense::hover());
     let fase = (ui.input(|i| i.time) * 1.5).fract() as f32;
