@@ -294,6 +294,21 @@ pub fn tab_strip(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                         });
                         ui.add_space(window_controls::SIDE_GAP - 4.0);
                     }
+                    // Nider (as in Nider Etapas): a newer version lights this button; while the
+                    // installer downloads, the arrow runs down and the percentage shows.
+                    if let Some(p) = crate::updates::downloading() {
+                        if let Some(p) = p {
+                            ui.label(egui::RichText::new(format!("{p}%")).font(theme::semibold(12.0)).color(t.accent_text));
+                        }
+                        crate::updates::seta_baixando(ui, t.accent);
+                    } else if let Some(v) = crate::updates::newer_known(app) {
+                        let tip = format!("Nova versão {v}. Clique para atualizar.");
+                        let r = icons::button(ui, "file-down", button, false, &tip);
+                        ui.painter().circle_filled(r.rect.right_top() + vec2(-7.0, 7.0), 3.5, t.accent);
+                        if r.clicked() {
+                            app.updates.open = true;
+                        }
+                    }
                     let (icon, label) = match app.theme_preference {
                         ThemePreference::System => ("monitor", tl!("Use system setting")),
                         ThemePreference::Light => ("sun", tl!("Light gray")),
