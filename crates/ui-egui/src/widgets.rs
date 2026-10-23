@@ -121,6 +121,56 @@ pub fn mode_tab(ui: &mut egui::Ui, label: &str, active: bool) -> Response {
     theme::hand(resp)
 }
 
+/// Nider "Vidro" (model B): the mode bar carries a row of tool pills under its tabs, the Tools
+/// panel shows the pages until a tool is picked, and panels are named in small capitals. Off in
+/// the unit tests, which pin the Acrobat-like layout.
+pub const PILLS: bool = !cfg!(test);
+
+/// A pill's glass: a faint wash of the text colour with a slightly stronger edge.
+pub fn pill_colors(t: &Tokens) -> (Color32, Color32) {
+    if t.dark() {
+        (Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 10), Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 20))
+    } else {
+        (Color32::from_rgba_unmultiplied(0x10, 0x18, 0x20, 8), Color32::from_rgba_unmultiplied(0x10, 0x18, 0x20, 24))
+    }
+}
+
+/// Model B's tool pill: icon (tinted `hue`) and label on glass; `active` outlines it in the app's
+/// colour.
+pub fn tool_pill(ui: &mut egui::Ui, icon: &str, label: &str, hue: Color32, active: bool, enabled: bool) -> Response {
+    let t = Tokens::get(ui.ctx());
+    let font = theme::medium(12.5);
+    let w = ui.fonts_mut(|f| f.layout_no_wrap(label.to_owned(), font.clone(), t.text).size().x);
+    let icon_w = if icon.is_empty() { 0.0 } else { 22.0 };
+    let (rect, resp) = ui.allocate_exact_size(vec2(w + 26.0 + icon_w, 34.0), if enabled { Sense::click() } else { Sense::hover() });
+    resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, enabled, active, label));
+    let press = theme::Press::track(ui, &resp);
+    let (fill, edge) = pill_colors(&t);
+    let fill = if resp.hovered() && enabled { t.hover } else { fill };
+    let stroke = if active { Stroke::new(1.5, t.accent) } else { Stroke::new(1.0, edge) };
+    let fill = if active { t.accent.gamma_multiply(0.14) } else { fill };
+    ui.painter().rect(rect, CornerRadius::same(11), fill, stroke, egui::StrokeKind::Inside);
+    let body = rect.translate(press.offset());
+    let ink = if !enabled {
+        t.text_faint
+    } else if active {
+        t.accent_text
+    } else {
+        t.text
+    };
+    if !icon.is_empty() {
+        icons::paint(
+            ui,
+            Rect::from_center_size(body.left_center() + vec2(22.0, 0.0), vec2(16.0, 16.0)),
+            icon,
+            15.0,
+            if enabled { hue } else { t.text_faint },
+        );
+    }
+    ui.painter().text(body.left_center() + vec2(13.0 + icon_w, 0.0), Align2::LEFT_CENTER, label, font, ink);
+    theme::hand(resp)
+}
+
 /// Rounded pill button; `primary` fills with the accent.
 pub fn pill_button(ui: &mut egui::Ui, label: &str, primary: bool) -> Response {
     let t = Tokens::get(ui.ctx());

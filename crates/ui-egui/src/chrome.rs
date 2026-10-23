@@ -520,13 +520,20 @@ pub fn mode_bar(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     // Vidro: the menu row is a rounded glass card floating on the backdrop.
     egui::Panel::top("mode_bar")
-        .exact_size(56.0)
+        .exact_size(if widgets::PILLS { 102.0 } else { 56.0 })
         .frame(egui::Frame::NONE.inner_margin(egui::Margin { left: 16, right: 16, top: 0, bottom: 8 }))
         .show(ui, |ui| {
             let card = ui.max_rect();
             ui.painter().rect(card, CornerRadius::same(18), t.glass, Stroke::new(1.0, t.glass_edge), egui::StrokeKind::Inside);
             theme::glass_sheen(ui.painter(), card, 18.0, &t);
-            let mut inner = ui.new_child(egui::UiBuilder::new().max_rect(card.shrink2(vec2(10.0, 0.0))).layout(Layout::left_to_right(Align::Center)));
+            let tabs_rect = if widgets::PILLS { Rect::from_min_max(card.min, egui::pos2(card.max.x, card.min.y + 48.0)) } else { card };
+            if widgets::PILLS {
+                let row = Rect::from_min_max(egui::pos2(card.min.x + 12.0, card.min.y + 48.0), egui::pos2(card.max.x - 12.0, card.max.y - 8.0));
+                let mut pills = ui.new_child(egui::UiBuilder::new().max_rect(row).layout(Layout::left_to_right(Align::Center)));
+                tool_pills(app, &mut pills);
+            }
+            let mut inner =
+                ui.new_child(egui::UiBuilder::new().max_rect(tabs_rect.shrink2(vec2(10.0, 0.0))).layout(Layout::left_to_right(Align::Center)));
             let ui = &mut inner;
             ui.horizontal_centered(|ui| {
                 ui.spacing_mut().item_spacing.x = 2.0;
@@ -565,6 +572,81 @@ pub fn mode_bar(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                 });
             });
         });
+}
+
+/// Model B's second row: the picked tool's actions as pills (with a way back to every tool), or,
+/// with no tool picked, the tools themselves. Scrolls sideways when the window is narrow.
+fn tool_pills(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
+    use pdfcraft_engine::catalog::{Availability, TOOL_GROUPS};
+    let t = Tokens::get(ui.ctx());
+    let hue = |g: &pdfcraft_engine::catalog::ToolGroup| Color32::from_rgb(g.hue[0], g.hue[1], g.hue[2]);
+    let mut run: Option<&'static str> = None;
+    let mut pick: Option<&'static str> = None;
+    let mut back = false;
+    egui::ScrollArea::horizontal().scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysHidden).show(ui, |ui| {
+        ui.horizontal_centered(|ui| {
+            ui.spacing_mut().item_spacing.x = 8.0;
+            let group = match app.left {
+                crate::LeftPanel::Tool(id) => pdfcraft_engine::catalog::group(id),
+                crate::LeftPanel::AllTools => None,
+            };
+            match group {
+                Some(g) => {
+                    if widgets::tool_pill(ui, "chevron-left", tl!("All tools"), t.text_muted, false, true).clicked() {
+                        back = true;
+                    }
+                    let _ = widgets::tool_pill(ui, g.icon, tl!(g.label), hue(g), true, true);
+                    for sec in g.sections {
+                        for item in sec.items {
+                            let ready = item.availability == Availability::Ready;
+                            let enabled = ready
+                                && pdfcraft_engine::commands::command(item.command)
+                                    .is_none_or(|spec| app.active.is_none() || app.command_enabled(spec));
+                            let resp = widgets::tool_pill(ui, item.icon, tl!(item.label), hue(g), false, enabled);
+                            let resp = resp.on_hover_text(format!("{} — {}", tl!(sec.title), tl!(item.label)));
+                            if item.actions.is_empty() {
+                                if resp.clicked() {
+                                    run = Some(item.command);
+                                }
+                            } else {
+                                egui::Popup::menu(&resp).show(|ui| {
+                                    ui.set_min_width(180.0);
+                                    for (n, id) in item.actions.iter().enumerate() {
+                                        let Some(spec) = pdfcraft_engine::commands::command(id) else { continue };
+                                        let on = (n == 0 && app.active.is_none()) || app.command_enabled(spec);
+                                        if ui.add_enabled(on, egui::Button::new(crate::i18n::menu_label(spec.id, spec.label))).clicked() {
+                                            run = Some(spec.id);
+                                            ui.close();
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+                None => {
+                    for g in TOOL_GROUPS {
+                        let ready = g.availability != Availability::Ready;
+                        let resp = widgets::tool_pill(ui, g.icon, tl!(g.label), hue(g), false, true);
+                        let resp = if ready { resp.on_hover_text(tl!("Planned")) } else { resp };
+                        if resp.clicked() {
+                            pick = Some(g.id);
+                        }
+                    }
+                }
+            }
+        });
+    });
+    if back {
+        app.left = crate::LeftPanel::AllTools;
+        app.mode = Mode::AllTools;
+    }
+    if let Some(id) = pick {
+        app.select_tool(id);
+    }
+    if let Some(cmd) = run {
+        app.run_command(cmd);
+    }
 }
 
 fn main_menu(app: &mut PdfCraftApp, ui: &mut egui::Ui) {

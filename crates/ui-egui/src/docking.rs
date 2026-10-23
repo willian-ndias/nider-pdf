@@ -390,6 +390,18 @@ pub fn show(app: &mut crate::PdfCraftApp, ui: &mut egui::Ui) {
     style.border = egui::Stroke::new(1.0, t.divider);
     style.accent = t.accent;
     style.font = crate::theme::medium(12.0);
+    if crate::widgets::PILLS {
+        // Model B: no tab strip over the panels (each card names itself); a thin grip stays for
+        // moving them, and the backdrop shows between the cards.
+        style.tab_height = 8.0;
+        style.tab_background = egui::Color32::TRANSPARENT;
+        style.active_background = egui::Color32::TRANSPARENT;
+        style.text = egui::Color32::TRANSPARENT;
+        style.inactive_text = egui::Color32::TRANSPARENT;
+        style.background = egui::Color32::TRANSPARENT;
+        style.border = egui::Stroke::NONE;
+        style.gap = 12.0;
+    }
     drain_reveals(&mut workspace, app);
     let mut rendered = workspace.layout.clone();
     if app.active.is_none() && rendered.contains(&Panel::Inspector) {
@@ -400,7 +412,8 @@ pub fn show(app: &mut crate::PdfCraftApp, ui: &mut egui::Ui) {
         ui,
         &rendered,
         &style,
-        |panel| crate::i18n::t(panel.label()).into(),
+        // Model B: the cards name themselves; the strip over them stays blank.
+        |panel| if crate::widgets::PILLS { String::new() } else { crate::i18n::t(panel.label()).into() },
         permissions,
         panel_limits,
         |ui, panel| match panel {

@@ -29,6 +29,10 @@ pub fn left_panel(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
         .show(ui, |ui| match app.left {
             // Organize pages has its own panel whenever the grid shows (with a document open).
             _ if app.active.is_some() && crate::organize_panel::showing(app) => crate::organize_panel::panel(app, ui, &t),
+            LeftPanel::AllTools if widgets::PILLS && app.active.is_some() => left_pages(app, ui, &t),
+            // Model B: a tool whose actions are all in the pills row leaves the pages on the left;
+            // the tools with a panel of their own (options, palettes, footers) keep it.
+            LeftPanel::Tool(id) if widgets::PILLS && app.active.is_some() && !OWN_PANEL.contains(&id) => left_pages(app, ui, &t),
             LeftPanel::AllTools => all_tools(app, ui, &t),
             LeftPanel::Tool(id) => match catalog::group(id) {
                 Some(g) => tool_detail(app, ui, &t, g),
@@ -36,6 +40,46 @@ pub fn left_panel(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
             },
         });
     crate::theme::glass_sheen(ui.painter(), card.response.rect, 14.0, &t);
+}
+
+/// Tools that need their own panel beside the pills (stamp palette, form preview, format text,
+/// redaction footer, signatures, measuring).
+const OWN_PANEL: &[&str] = &["measure", "stamp", "form", "edit", "redact", "fill_sign", "organize"];
+
+/// Model B: with no tool picked, the left card shows the pages (the tools are the mode bar's pills).
+fn left_pages(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &Tokens) {
+    let Some((index, id)) = app.active_ids() else { return };
+    let modal = app.dialog.is_some() || app.palette_open;
+    let mut nav: Option<Nav> = None;
+    {
+        let Some(doc) = app.session.get(id) else { return };
+        let editable = doc.allows_assembly() && doc.read_only_reason.is_none();
+        let info = &doc.info;
+        let Some(view) = app.views.get_mut(index) else { return };
+        ui.set_min_height(ui.available_height());
+        small_caps_title(ui, t, tl!("Pages"), Some(info.pages.len()));
+        ui.add_space(6.0);
+        pages(ui, t, info, view, modal, editable, &mut nav);
+    }
+    let Some(view) = app.views.get_mut(index) else { return };
+    match nav {
+        Some(Nav::Page(p)) => view.go_to_page(p),
+        Some(Nav::Dest(p, _)) => view.go_to_page(p),
+        Some(Nav::Flash(p, r)) => {
+            view.go_to_page(p);
+            view.flash = Some((p, r, 0.0));
+        }
+        None => {}
+    }
+}
+
+/// Model B's panel title: small capitals, with the count after a middle dot.
+pub(crate) fn small_caps_title(ui: &mut egui::Ui, t: &Tokens, title: &str, count: Option<usize>) {
+    let text = match count {
+        Some(n) => format!("{} · {n}", title.to_uppercase()),
+        None => title.to_uppercase(),
+    };
+    ui.label(egui::RichText::new(text).font(theme::semibold(10.5)).color(t.text_faint).extra_letter_spacing(1.3));
 }
 
 fn panel_header(ui: &mut egui::Ui, t: &Tokens, title: &str, back: bool) -> (bool, bool) {
@@ -555,9 +599,13 @@ pub fn right_panel(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                     RightPanel::Compare => ("Compare", compare.as_ref().filter(|c| c.new == id).map(|c| c.result.changes.len())),
                 };
                 ui.horizontal(|ui| {
-                    ui.label(egui::RichText::new(tl!(title)).font(theme::semibold(15.5)));
-                    if let Some(c) = count {
-                        ui.label(egui::RichText::new(c.to_string()).font(theme::medium(13.0)).color(t.text_faint));
+                    if widgets::PILLS {
+                        small_caps_title(ui, &t, tl!(title), count);
+                    } else {
+                        ui.label(egui::RichText::new(tl!(title)).font(theme::semibold(15.5)));
+                        if let Some(c) = count {
+                            ui.label(egui::RichText::new(c.to_string()).font(theme::medium(13.0)).color(t.text_faint));
+                        }
                     }
                     if panel == RightPanel::Pages && view.selected.len() > 1 {
                         let n = view.selected.len().to_string();
