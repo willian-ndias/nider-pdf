@@ -188,7 +188,8 @@ pub fn paint_backdrop(ctx: &egui::Context) {
     painter.add(egui::Shape::mesh(mesh));
     // Two soft glows, as on the Nider Terminal: the app's colour at the top left, silver at the
     // top right. Each is a fan from a bright centre to a transparent rim.
-    let strength = if t.dark() { 60 } else { 90 };
+    // Model B: graphite; the app's colour only hints at the corner.
+    let strength = if t.dark() { 18 } else { 60 };
     glow(
         &painter,
         rect.left_top() + egui::vec2(rect.width() * 0.16, -rect.height() * 0.06),
