@@ -1137,50 +1137,15 @@ fn dialogs(app: &mut PdfCraftApp, ctx: &egui::Context) {
                 });
             }
             Dialog::About => {
-                // Tabs About · Contributors · Models (craftrules standards/contributors.md).
-                let tab_id = egui::Id::new("about_tab");
-                let mut tab = ui.data_mut(|d| d.get_temp::<u8>(tab_id)).unwrap_or(0);
-                ui.horizontal_wrapped(|ui| {
-                    for (i, label) in ["About", "Contributors", "Models"].into_iter().enumerate() {
-                        let i = i as u8;
-                        if widgets::mode_tab(ui, tl!(label), tab == i).clicked() {
-                            tab = i;
-                        }
-                    }
-                });
-                ui.data_mut(|d| d.insert_temp(tab_id, tab));
-                ui.separator();
-                match tab {
-                    1 => crate::credits::contributors_ui(ui),
-                    2 => crate::credits::models_ui(ui),
-                    _ => {
-                        ui.horizontal(|ui| {
-                            ui.vertical(|ui| {
-                                ui.label(egui::RichText::new("Nider PDF").font(theme::semibold(20.0)));
-                                ui.label(crate::i18n::fmt(tl!("Version {v}"), &[("v", &pdfcraft_engine::build_info::version())]));
-                                ui.label("by nider.com.br");
-                                ui.label("Willian Dias  ·  nider@nider.com.br");
-                            });
-                        });
-                        ui.add_space(6.0);
-                        ui.hyperlink_to("nider.com.br", "https://nider.com.br");
-                        ui.label("Leitor e editor de PDF. MIT OU Apache-2.0.");
-                        ui.label(
-                            egui::RichText::new(
-                                "Rendering: hayro (bootstrap) · UI: egui · Icons: Lucide (ISC) · Fonts: Inter, JetBrains Mono, Dancing Script (OFL)",
-                            )
-                            .color(t.text_muted)
-                            .small(),
-                        );
-                        ui.add_space(12.0);
-                        ui.horizontal(|ui| {
-                            ui.label(egui::RichText::new("Baseado no PdfCraft, de Brandon Thomas e da equipe ArtCraft.").color(t.text_muted));
-                        });
-                        ui.add_space(6.0);
-                        ui.hyperlink_to("Código-fonte do Nider PDF: github.com/willian-ndias/nider-pdf", "https://github.com/willian-ndias/nider-pdf");
-                        ui.hyperlink_to("Projeto original: github.com/storytold/pdfcraft", "https://github.com/storytold/pdfcraft");
-                    }
-                }
+                ui.set_width(420.0);
+                ui.label(egui::RichText::new("Nider PDF").font(theme::semibold(20.0)));
+                ui.label(crate::i18n::fmt(tl!("Version {v}"), &[("v", &pdfcraft_engine::build_info::version())]));
+                ui.label("Leitor e editor de PDF.");
+                ui.add_space(10.0);
+                ui.label(egui::RichText::new("Nider Company").strong());
+                ui.label("Willian Dias");
+                ui.hyperlink_to("nider.com.br", "https://nider.com.br");
+                ui.hyperlink_to("nider@nider.com.br", "mailto:nider@nider.com.br");
             }
         }
         ui.add_space(16.0);

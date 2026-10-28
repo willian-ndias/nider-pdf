@@ -109,7 +109,6 @@ pub use print_ui::{Handling as PrintHandling, PrintDraft, PrinterSource, Which a
 mod redact_ui;
 pub use redact_ui::{HiddenDraft, PagesDraft as RedactPagesDraft, RedactPrefs, SearchDraft as RedactSearchDraft, SearchMode as RedactSearchMode};
 pub mod i18n;
-pub mod nider_splash;
 
 /// [`PdfCraftApp::date_text`] for callers that already borrow other parts of the app.
 pub(crate) fn date_text(session: &Session, fmt: Option<&str>) -> Result<String, String> {
@@ -815,10 +814,6 @@ pub struct PdfCraftApp {
     pub pending_full_screen: Option<DocId>,
     /// An absolute GoToR target waiting for approval, before any target-file I/O (#1364).
     pub pending_remote_link: Option<PendingRemoteLink>,
-    /// Nider: tela de abertura (logo, carregando, dados do criador), como no Etapas.
-    pub splash: Option<nider_splash::Splash>,
-    /// Arquivos da linha de comando abertos no primeiro frame, com a splash visível.
-    defer_startup_files: Option<Vec<String>>,
 }
 
 /// Where in a document a request to open an address came from.
@@ -1055,8 +1050,6 @@ impl PdfCraftApp {
             pending_link: None,
             pending_full_screen: None,
             pending_remote_link: None,
-            splash: None,
-            defer_startup_files: None,
             protect_draft: Default::default(),
             boxes_draft: Default::default(),
             marks_draft: Default::default(),
@@ -1088,12 +1081,6 @@ impl PdfCraftApp {
             number_draft: NumberDraft { from: 1, to: 1, style: pdfcraft_engine::LabelStyle::Decimal, prefix: String::new(), start: 1 },
             word_count_draft: word_count_ui::Draft::default(),
         }
-    }
-
-    /// PDFs da linha de comando: abertos no primeiro frame, com a splash do Nider visível.
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn defer_startup_opens(&mut self, files: Vec<String>) {
-        self.defer_startup_files = Some(files);
     }
 
     /// Fields are being edited (Prepare a form is open or a field tool is picked), unless the
@@ -1851,9 +1838,6 @@ impl PdfCraftApp {
             return;
         }
         self.startup_superseded = true;
-        if self.splash.is_none() {
-            self.splash = Some(nider_splash::Splash::new());
-        }
         if let Err(error) = self.schedule_open(OpenRequest {
             name: name.clone(),
             path: Some(path.to_string()),
@@ -2967,7 +2951,6 @@ impl eframe::App for PdfCraftApp {
 
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.ctx = Some(ctx.clone());
-        self.flush_deferred_startup_files();
         #[cfg(not(target_arch = "wasm32"))]
         self.window_state.repair(ctx);
         self.dialog_epoch();
@@ -3165,7 +3148,6 @@ impl eframe::App for PdfCraftApp {
             // Notices too: a refused field value or a failed save must be seen in full screen.
             self.show_progress(&ctx);
             widgets::toast(self, &ctx);
-            self.show_splash(&ctx);
             self.finish_render_frame(&ctx);
             return;
         }
@@ -3222,34 +3204,11 @@ impl eframe::App for PdfCraftApp {
         dialogs::show(self, &ctx);
         self.show_progress(&ctx);
         widgets::toast(self, &ctx);
-        self.show_splash(&ctx);
         self.finish_render_frame(&ctx);
     }
 }
 
 impl PdfCraftApp {
-    /// Abre PDFs da linha de comando depois que a janela pintou a splash (desktop).
-    #[cfg(not(target_arch = "wasm32"))]
-    fn flush_deferred_startup_files(&mut self) {
-        if let Some(files) = self.defer_startup_files.take() {
-            self.reopen_last_files(&files);
-            for f in files {
-                self.open_path(&f);
-            }
-        }
-    }
-
-    #[cfg(target_arch = "wasm32")]
-    fn flush_deferred_startup_files(&mut self) {}
-
-    fn show_splash(&mut self, ctx: &egui::Context) {
-        if let Some(splash) = &mut self.splash
-            && !splash.show(ctx)
-        {
-            self.splash = None;
-        }
-    }
-
     fn finish_render_frame(&mut self, ctx: &egui::Context) {
         // The Combine grid's thumbnails, whichever tab shows (renders under way still finish).
         self.combine_thumbs_frame(ctx);
