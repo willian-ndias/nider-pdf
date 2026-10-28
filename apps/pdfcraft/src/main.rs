@@ -441,7 +441,14 @@ fn app_creator<'a>(
                 &[("folder", &w.folder.display().to_string()), ("error", &w.error)],
             );
         }
-        if create_images {
+        if control_file.is_none() {
+            app.splash = Some(pdfcraft_ui_egui::nider_splash::Splash::new());
+            if !create_images {
+                app.defer_startup_opens(files);
+            } else if let Err(e) = app.begin_image_import_paths(&files) {
+                app.notify(e);
+            }
+        } else if create_images {
             if let Err(e) = app.begin_image_import_paths(&files) {
                 app.notify(e);
             }
