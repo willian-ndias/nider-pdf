@@ -68,7 +68,7 @@ impl Splash {
             .show(ctx, |ui| {
                 ui.set_min_size(screen.size());
                 let _ = ui.allocate_rect(screen, Sense::click());
-                let painter = ui.painter();
+                let painter = ui.painter().clone();
                 painter.rect_filled(screen, 0.0, with_alpha(Color32::from_rgb(0x05, 0x08, 0x0B), 0.92 * opacity));
                 let card = Rect::from_center_size(screen.center(), vec2(412.0, 430.0));
                 painter.rect(
@@ -79,7 +79,7 @@ impl Splash {
                     egui::StrokeKind::Inside,
                 );
                 let hex_c = pos2(card.center().x, card.min.y + 44.0 + 75.0);
-                paint_hex(painter, hex_c, 70.0, elapsed as f32, ACCENT, opacity);
+                paint_hex(&painter, hex_c, 70.0, elapsed as f32, ACCENT, opacity);
                 let icon = Rect::from_center_size(hex_c, vec2(104.0, 104.0));
                 ui.put(
                     icon,
