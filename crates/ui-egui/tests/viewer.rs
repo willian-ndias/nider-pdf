@@ -807,6 +807,46 @@ fn marquee_zoom_and_snapshot() {
     assert!(after > before * 2.0, "{before} → {after}");
 }
 
+/// Nider: File ▸ Print selected area turns the dragged rectangle into a one-page document at
+/// the area's own size and opens the Print dialog over it, leaving the clipboard alone.
+#[test]
+fn print_selected_area_opens_print_with_the_area_as_a_page() {
+    let mut h = harness();
+    let i = h.state().active.unwrap();
+    let r = h.state().views[i].page_screen_rect(0).expect("on screen");
+    let at = |x: f32, y: f32| egui::pos2(r.left() + x / 200.0 * r.width(), r.top() + (300.0 - y) / 300.0 * r.height());
+    h.state_mut().system_clipboard = false;
+    assert!(h.state_mut().execute("edit.print_area"));
+    assert!(h.state().snapshot_print);
+    drag(&mut h, at(20.0, 200.0), at(120.0, 100.0));
+    h.run_steps(2);
+    let s = h.state();
+    assert!(!s.snapshot_print);
+    assert!(matches!(s.quick_tool, pdfcraft_ui_egui::QuickTool::Select), "{:?}", s.quick_tool);
+    assert!(matches!(s.dialog, Some(pdfcraft_ui_egui::Dialog::Print)), "the Print dialog is open");
+    let new = s.active.expect("a new tab");
+    assert_ne!(new, i);
+    let d = s.session.get(s.views[new].id).expect("the area document");
+    assert_eq!(d.info.pages.len(), 1);
+    // 100 × 100 page points dragged: the page is about that size, whatever the zoom.
+    let p = &d.info.pages[0];
+    assert!((p.width - 100.0).abs() < 4.0 && (p.height - 100.0).abs() < 4.0, "{} × {}", p.width, p.height);
+}
+
+/// Nider: a document without bookmarks offers "New bookmark" right in the empty panel.
+#[test]
+fn empty_bookmarks_panel_offers_a_new_bookmark() {
+    let mut h = harness();
+    let i = h.state().active.unwrap();
+    let id = h.state().views[i].id;
+    assert!(h.state().session.get(id).unwrap().info.outline.is_empty());
+    h.state_mut().choose_right_panel(Some(pdfcraft_ui_egui::RightPanel::Bookmarks));
+    h.run_steps(2);
+    h.get_by_label("New bookmark").click();
+    h.run_steps(3);
+    assert_eq!(h.state().session.get(id).unwrap().info.outline.len(), 1, "the button made a bookmark");
+}
+
 #[test]
 fn fit_visible_zooms_to_the_content_width() {
     let mut h = harness();

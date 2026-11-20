@@ -66,7 +66,7 @@ fn read_clipboard() -> Option<Clip> {
     cb.get_text().ok().filter(|t| !t.trim().is_empty()).map(Clip::Text)
 }
 
-fn png_from_rgba(width: usize, height: usize, rgba: &[u8]) -> Result<Vec<u8>, String> {
+pub(crate) fn png_from_rgba(width: usize, height: usize, rgba: &[u8]) -> Result<Vec<u8>, String> {
     let (w, h) = (u32::try_from(width).map_err(|e| e.to_string())?, u32::try_from(height).map_err(|e| e.to_string())?);
     if w == 0 || h == 0 || rgba.len() != width * height * 4 {
         return Err("the clipboard image is empty or malformed".into());
@@ -135,6 +135,23 @@ impl PdfCraftApp {
             Clip::Text(t) => self.session.create_from_text("Clipboard", &t),
         };
         self.open_created_bytes("Clipboard.pdf", created.map_err(|e| e.to_string()))
+    }
+
+    /// Nider: File ▸ Print selected area. The last snapshot becomes a one-page document at the
+    /// size the area has on the page (`width_pt` page points across `width_px` pixels), which
+    /// opens in its own tab with the Print dialog over it.
+    pub(crate) fn print_area(&mut self, width_px: u32, width_pt: f32) {
+        let Some((w, h, rgba)) = self.last_snapshot.as_ref() else { return };
+        let dpi = (72.0 * f64::from(width_px) / f64::from(width_pt.max(1.0))).clamp(1.0, 1200.0);
+        let created = png_from_rgba(*w as usize, *h as usize, rgba).and_then(|png| {
+            self.session
+                .create_from_images_with_resolution(&[("Area.png".into(), png)], pdfcraft_engine::ImageResolution::Dpi(dpi))
+                .map_err(|e| e.to_string())
+        });
+        match self.open_created_bytes("Área selecionada.pdf", created) {
+            Ok(()) => self.open_print(),
+            Err(e) => self.notify_fmt("Couldn't create a PDF: {e}", &[("e", &e.to_string())]),
+        }
     }
 
     /// Create ▸ Blank page: a new untitled US Letter document.

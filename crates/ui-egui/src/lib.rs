@@ -719,6 +719,9 @@ pub struct PdfCraftApp {
     /// The last snapshot (width, height, RGBA); `system_clipboard` also puts it on the
     /// system clipboard (tests turn that off).
     pub last_snapshot: Option<(u32, u32, pdfcraft_render::Pixels)>,
+    /// Nider: the Snapshot rectangle in progress was asked for by File ▸ Print selected area,
+    /// so it is printed instead of copied.
+    pub snapshot_print: bool,
     /// The last image copied with Copy Image (width, height, straight RGBA), also put on the
     /// system clipboard when `system_clipboard` is on.
     pub last_copied_image: Option<(u32, u32, Vec<u8>)>,
@@ -1028,6 +1031,7 @@ impl PdfCraftApp {
             page_clipboard: None,
             grid_drop: None,
             last_snapshot: None,
+            snapshot_print: false,
             last_copied_image: None,
             last_copied_file: None,
             system_clipboard: true,
@@ -2834,8 +2838,15 @@ impl PdfCraftApp {
         }
         self.registry_shortcuts(ctx);
         // (Esc closes a Combine file shown large first.)
-        if self.full_screen && self.combine_tab.preview.is_none() && ctx.input(|i| i.key_pressed(Key::Escape)) {
+        // Nider: Esc first closes what the page has open (find bar, camera corners), then leaves.
+        let page_busy = self.active.and_then(|i| self.views.get(i)).is_some_and(|v| v.find.is_some() || v.camera.is_some());
+        if self.full_screen && !page_busy && self.combine_tab.preview.is_none() && ctx.input(|i| i.key_pressed(Key::Escape)) {
             self.set_full_screen(ctx, false);
+        }
+        // Nider: F11 enters and leaves full screen, as in browsers and Windows apps.
+        if self.active.is_some() && self.dialog.is_none() && ctx.input(|i| i.key_pressed(Key::F11)) {
+            let on = !self.full_screen;
+            self.set_full_screen(ctx, on);
         }
         if let Some(i) = self.active {
             // Select all belongs to the document or page grid, unless a text field or

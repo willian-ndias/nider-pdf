@@ -701,6 +701,18 @@ pub fn right_panel(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                     RightPanel::Bookmarks => {
                         if info.outline.is_empty() {
                             empty(ui, &t, "bookmark", "This document has no bookmarks.");
+                            // Nider: the way to make the first one, right where the panel says there is none.
+                            if bm_editable {
+                                ui.add_space(10.0);
+                                ui.vertical_centered(|ui| {
+                                    if ui
+                                        .add(egui::Button::image_and_text(icons::image("bookmark-plus", 16.0, t.text), tl!("New bookmark")))
+                                        .clicked()
+                                    {
+                                        bm_action = Some(BmAction::New);
+                                    }
+                                });
+                            }
                         }
                         let mut ctx = OutlineCtx {
                             nav: &mut nav,

@@ -279,7 +279,7 @@ impl Default for Settings {
 }
 
 /// Common paper sizes (points, portrait).
-pub const PAPERS: [(&str, (f64, f64)); 20] = [
+pub const PAPERS: [(&str, (f64, f64)); 22] = [
     ("US Letter", (612.0, 792.0)),
     ("US Legal", (612.0, 1008.0)),
     ("Tabloid", (792.0, 1224.0)),
@@ -300,6 +300,9 @@ pub const PAPERS: [(&str, (f64, f64)); 20] = [
     ("A1", (1683.78, 2383.94)),
     ("A0", (2383.94, 3370.39)),
     ("4 x 6 in label (101.6 x 152.4 mm)", (288.0, 432.0)),
+    // Nider: Brazilian sizes, after the label so saved paper choices keep their index.
+    ("Ofício (216 x 330 mm)", (612.28, 935.43)),
+    ("F4 (210 x 330 mm)", (595.28, 935.43)),
 ];
 
 /// `PAPERS` index of the 4 × 6 in shipping label.
@@ -316,6 +319,8 @@ pub fn cups_media(index: usize) -> Option<&'static str> {
         "A4" => Some("A4"),
         "A5" => Some("A5"),
         _ if index == LABEL_PAPER => Some("w288h432"),
+        "Ofício (216 x 330 mm)" => Some("w612h935"),
+        "F4 (210 x 330 mm)" => Some("w595h935"),
         _ => None,
     }
 }
