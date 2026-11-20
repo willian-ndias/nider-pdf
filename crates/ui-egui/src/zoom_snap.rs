@@ -67,7 +67,16 @@ impl PdfCraftApp {
                 if self.views.get(index).map(|v| v.id).is_some_and(|id| !self.may_copy(id)) {
                     return;
                 }
-                match self.snapshot(index, page, view_rect) {
+                // Nider: Print selected area takes the same picture, without touching the clipboard.
+                let print = std::mem::take(&mut self.snapshot_print);
+                let clipboard = self.system_clipboard;
+                if print {
+                    self.system_clipboard = false;
+                }
+                let shot = self.snapshot(index, page, view_rect);
+                self.system_clipboard = clipboard;
+                match shot {
+                    Ok((w, _)) if print => self.print_area(w, view_rect[2] - view_rect[0]),
                     Ok((w, h)) => {
                         self.notify_fmt("The selected area has been copied ({w} × {h} pixels)", &[("w", &w.to_string()), ("h", &h.to_string())])
                     }

@@ -529,7 +529,13 @@ impl PdfCraftApp {
             "edit.column_select" => self.quick_tool = crate::QuickTool::ColumnSelect,
             "edit.snapshot" => {
                 self.quick_tool = crate::QuickTool::Snapshot;
+                self.snapshot_print = false;
                 self.notify_tr("Drag a rectangle around the area to copy");
+            }
+            "edit.print_area" => {
+                self.quick_tool = crate::QuickTool::Snapshot;
+                self.snapshot_print = true;
+                self.notify_tr("Drag a rectangle around the area to print");
             }
             "edit.copy" => {
                 if let (Some(i), Some(ctx)) = (active, self.ctx.clone()) {

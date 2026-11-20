@@ -781,8 +781,15 @@ pub fn right_rail(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
             // Page navigation cluster at the bottom (as in Acrobat's rail).
             let view = &mut app.views[index];
             let mut page_display = None;
+            let mut full_screen = false;
             ui.with_layout(Layout::bottom_up(Align::Center), |ui| {
                 ui.spacing_mut().item_spacing.y = 2.0;
+                // Nider: full screen one click away, at the foot of the rail (also F11; Esc leaves).
+                let tip = format!("{} ({})", tl!("Full screen mode"), crate::commands::command_shortcut_label(ui.ctx(), "view.full_screen"));
+                if icons::button(ui, "scan", 32.0, false, &tip).clicked() {
+                    full_screen = true;
+                }
+                ui.add_space(4.0);
                 let tip = crate::commands::key_tip(ui.ctx(), tl!("Zoom out ({key})"), crate::commands::ZOOM_OUT);
                 if icons::button(ui, "zoom-out", 32.0, false, &tip).clicked() {
                     view.zoom_step(false);
@@ -893,7 +900,7 @@ pub fn right_rail(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                     view.page_input = view.current_page_label(labels.get(view.current).map(String::as_str));
                 }
             });
-            if let Some(id) = page_display {
+            if let Some(id) = page_display.or(full_screen.then_some("view.full_screen")) {
                 app.execute(id);
             }
         });

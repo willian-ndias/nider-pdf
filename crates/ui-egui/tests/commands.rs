@@ -495,6 +495,32 @@ fn full_screen_toggles_by_shortcut_and_command_and_escape_leaves() {
     assert!(!h.state().full_screen, "the command toggles back");
 }
 
+/// Nider: F11 also toggles full screen, the rail's button enters it, and Esc first closes the
+/// find bar before leaving.
+#[test]
+fn full_screen_by_f11_rail_button_and_escape_after_find() {
+    let mut h = harness();
+    h.key_press(Key::F11);
+    h.run_steps(2);
+    assert!(h.state().full_screen, "F11 enters full screen");
+    h.key_press(Key::F11);
+    h.run_steps(2);
+    assert!(!h.state().full_screen, "F11 leaves full screen");
+    h.get_all_by_label_contains("Full screen mode").last().expect("the rail's full screen button").click();
+    h.run_steps(2);
+    assert!(h.state().full_screen, "the rail's button enters full screen");
+    let i = h.state().active.unwrap();
+    h.state_mut().views[i].open_find();
+    h.run_steps(2);
+    h.key_press(Key::Escape);
+    h.run_steps(2);
+    assert!(h.state().full_screen, "the first Esc only closes the find bar");
+    assert!(h.state().views[i].find.is_none());
+    h.key_press(Key::Escape);
+    h.run_steps(2);
+    assert!(!h.state().full_screen, "the next Esc leaves full screen");
+}
+
 #[test]
 fn the_about_dialog_shows_the_running_version() {
     let mut h = harness();

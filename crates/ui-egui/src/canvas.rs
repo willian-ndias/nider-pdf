@@ -3946,7 +3946,12 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
         tool = QuickTool::Select;
     }
     if let Some(done) = app.views[index].marquee_done.take() {
+        // Nider: Print selected area is one rectangle, then back to selecting.
+        let printing = tool == QuickTool::Snapshot && app.snapshot_print;
         app.finish_marquee(index, done);
+        if printing && !app.snapshot_print {
+            tool = QuickTool::Select;
+        }
     }
     // A signature rectangle was drawn, or an empty signature field clicked.
     let drawn = app.views[index].sign.drawn.take();
